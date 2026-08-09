@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tango Oyunu</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #0a66c2 0%, #004182 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: white;
+        }
+        .container {
+            background: #fff;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 900px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            color: #000;
+        }
+        h1 { color: #0a66c2; margin-bottom: 20px; text-align: center; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .stat {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .stat-label { font-size: 0.8em; color: #666; }
+        .stat-value { font-size: 1.5em; color: #0a66c2; margin-top: 5px; }
+        .game-wrapper {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        .grid-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(6, 60px);
+            grid-template-rows: repeat(6, 60px);
+            gap: 0;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .cell {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border: 2px solid #333;
+            cursor: pointer;
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .cell:hover {
+            border-color: #0a66c2;
+            box-shadow: 0 0 10px rgba(10, 102, 194, 0.2);
+        }
+        .cell.locked {
+            background: #e0e0e0;
+            cursor: not-allowed;
+            border-color: #999;
+        }
+        .cell.locked:hover {
+            border-color: #999;
+            box-shadow: none;
+        }
+        .cell.sun { background: #fffacd; }
+        .cell.moon { background: #e6e6fa; }
+        .cell.error { 
+            background: #ffcccc !important;
+            animation: shake 0.3s;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .side-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        button {
+            padding: 15px;
+            background: #0a66c2;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+        #undoBtn {
+            padding: 20px 10px;
+            font-size: 2em;
+            background: #ff9800;
+            min-width: 60px;
+        }
+        button:hover { background: #004182; }
+        #undoBtn:hover { background: #e68900; }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .message {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            min-height: 20px;
+            font-size: 1.1em;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error-msg { background: #f8d7da; color: #721c24; }
+        a {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #0a66c2;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 5px;
+        }
+        a:hover { background: #004182; }
+        .game-over {
+            text-align: center;
+            padding: 20px;
+            background: #fffacd;
+            border-radius: 10px;
+            display: none;
+        }
+        .game-over h2 { color: #0a66c2; margin-bottom: 15px; }
+        .final-text { font-size: 1.5em; color: #333; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tango</h1>
+        
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #0a66c2;">Adını gir</label>
+            <input type="text" id="passwordInput" placeholder="Şifreni yaz..." style="padding: 10px; width: 100%; border: 2px solid #ddd; border-radius: 5px; font-size: 1em;">
+        </div>
+        
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">Seviye</div>
+                <div class="stat-value" id="level">1</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Kupa</div>
+                <div class="stat-value" id="cup">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Hata</div>
+                <div class="stat-value" id="error">0</div>
+            </div>
+        </div>
+
+        <div id="gameArea">
+            <div class="message" id="message"></div>
+            
+            <div id="hintsArea" style="display: none; margin-bottom: 20px; padding: 15px; background: #e8f4f8; border-radius: 8px; border: 2px solid #0a66c2;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="color: #0a66c2; margin: 0;">💡 İpuçları:</h3>
+                    <button onclick="closeHints()" style="padding: 5px 15px; background: #f44336; font-size: 0.9em;">✕ Kapat</button>
+                </div>
+                <div id="hintsList" style="color: #333; line-height: 1.8;"></div>
+            </div>
+            
+            <div class="game-wrapper">
+                <div class="grid-wrapper">
+                    <div class="grid" id="grid"></div>
+                </div>
+                <div class="side-buttons">
+                    <button onclick="undoMove()" id="undoBtn" title="Geri Al">↩️</button>
+                    <button onclick="checkSolution()">Kontrol Et</button>
+                    <button onclick="resetLevel()">Tekrar Basla</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-over" id="gameOver">
+            <h2>Tebrikler</h2>
+            <div class="final-text">100 Seviyeyi Gecttin</div>
+            <div class="final-text">10000000 KUPA</div>
+            <a href="javascript:location.reload()">Yeniden Oyna</a>
+            <a href="index.html">Anasayfa</a>
+        </div>
+    </div>
+
+    <script>
+        const SUN = 'S';
+        const MOON = 'M';
+        const EMPTY = '';
+        
+        let currentLevel = 1;
+        let cup = 3000000;
+        let errorCount = 0;
+        let grid = [];
+        let initialGrid = []; // Başlangıç değerlerini sakla
+        let constraints = [];
+        let history = [];
+        let showHints = false;
+
+        function checkThreeConsecutive(grid) {
+            // Satır - yan yana 3 AYNI
+            for (let i = 0; i < 6; i++) {
+                for (let j = 0; j <= 3; j++) {
+                    if (grid[i][j] !== EMPTY && 
+                        grid[i][j] === grid[i][j+1] && 
+                        grid[i][j] === grid[i][j+2]) {
+                        return true;
+                    }
+                }
+            }
+            
+            // Sütun - üst üste 3 AYNI
+            for (let j = 0; j < 6; j++) {
+                for (let i = 0; i <= 3; i++) {
+                    if (grid[i][j] !== EMPTY && 
+                        grid[i][j] === grid[i+1][j] && 
+                        grid[i][j] === grid[i+2][j]) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+
+        function validateCell(row, col) {
+            // Hiçbir kontrol yapma - sadece doldur!
+            // "Kontrol Et" butonunda yapılacak
+            return {valid: true};
+        }
+
+        function isValidPlacement(grid, row, col, value) {
+            // Geçici olarak koy
+            grid[row][col] = value;
+            
+            // 3 yan yana kontrol
+            for (let j = 0; j <= 3; j++) {
+                if (grid[row][j] !== EMPTY && 
+                    grid[row][j] === grid[row][j+1] && 
+                    grid[row][j] === grid[row][j+2]) {
+                    return false;
+                }
+            }
+            
+            // 3 üst üste kontrol
+            for (let i = 0; i <= 3; i++) {
+                if (grid[i][col] !== EMPTY && 
+                    grid[i][col] === grid[i+1][col] && 
+                    grid[i][col] === grid[i+2][col]) {
+                    return false;
+                }
+            }
+            
+            // Satırda 4+ güneş/ay
+            let rowSun = 0, rowMoon = 0;
+            for (let j = 0; j < 6; j++) {
+                if (grid[row][j] === SUN) rowSun++;
+                else if (grid[row][j] === MOON) rowMoon++;
+            }
+            if (rowSun > 3 || rowMoon > 3) return false;
+            
+            // Sütunda 4+ güneş/ay
+            let colSun = 0, colMoon = 0;
+            for (let i = 0; i < 6; i++) {
+                if (grid[i][col] === SUN) colSun++;
+                else if (grid[i][col] === MOON) colMoon++;
+            }
+            if (colSun > 3 || colMoon > 3) return false;
+            
+            return true;
+        }
+        
+        function generateSolution() {
+            let sol = Array(6).fill(null).map(() => Array(6).fill(EMPTY));
+            
+            // Backtracking ile doldur
+            function solve(pos) {
+                if (pos === 36) {
+                    // Tüm grid dolduysa kontrol et
+                    for (let j = 0; j < 6; j++) {
+                        let sunCount = 0, moonCount = 0;
+                        for (let i = 0; i < 6; i++) {
+                            if (sol[i][j] === SUN) sunCount++;
+                            else if (sol[i][j] === MOON) moonCount++;
+                        }
+                        if (sunCount !== 3 || moonCount !== 3) return false;
+                    }
+                    return true;
+                }
+                
+                const row = Math.floor(pos / 6);
+                const col = pos % 6;
+                
+                // Rastgele sırada dene (☀️ veya 🌙)
+                const order = Math.random() < 0.5 ? [SUN, MOON] : [MOON, SUN];
+                
+                for (const value of order) {
+                    if (isValidPlacement(sol, row, col, value)) {
+                        if (solve(pos + 1)) return true;
+                        sol[row][col] = EMPTY;
+                    }
+                }
+                
+                return false;
+            }
+            
+            solve(0);
+            return sol;
+        }
+
+        function generatePuzzle() {
+            let solution = generateSolution();
+            grid = solution.map(row => [...row]);
+            history = [];
+            
+            const difficulty = Math.min(15 + currentLevel, 28);
+            let cleared = 0;
+            
+            while (cleared < difficulty) {
+                const row = Math.floor(Math.random() * 6);
+                const col = Math.floor(Math.random() * 6);
+                
+                if (grid[row][col] !== EMPTY) {
+                    grid[row][col] = EMPTY;
+                    cleared++;
+                }
+            }
+            
+            // Başlangıç değerlerini kaydet (bunlar değiştirilemeyecek)
+            initialGrid = grid.map(row => [...row]);
+        }
+
+        function displayGrid() {
+            const gridDiv = document.getElementById('grid');
+            gridDiv.innerHTML = '';
+            
+            for (let i = 0; i < 6; i++) {
+                for (let j = 0; j < 6; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    
+                    // Başlangıç hücreleri kilitli (initialGrid set edildiyse)
+                    if (initialGrid.length > 0 && initialGrid[i][j] !== EMPTY) {
+                        cell.classList.add('locked');
+                    }
+                    
+                    if (grid[i][j] === SUN) {
+                        cell.textContent = '☀️';
+                        cell.classList.add('sun');
+                    } else if (grid[i][j] === MOON) {
+                        cell.textContent = '🌙';
+                        cell.classList.add('moon');
+                    }
+                    
+                    cell.onclick = () => toggleCell(i, j, cell);
+                    cell.id = `cell-${i}-${j}`;
+                    gridDiv.appendChild(cell);
+                }
+            }
+        }
+
+        let errorTimeout = null;
+        
+        function toggleCell(row, col, cellElement) {
+            // initialGrid henüz set edilmemişse (oyun başında) - hata ver
+            if (initialGrid.length === 0) {
+                return;
+            }
+            
+            // Başlangıçta dolu hücre ise değiştirilemesin
+            if (initialGrid[row][col] !== EMPTY) {
+                return;
+            }
+            
+            // Önceki timeout varsa iptal et
+            if (errorTimeout) {
+                clearTimeout(errorTimeout);
+                errorTimeout = null;
+                document.getElementById('message').textContent = '';
+                const cell = document.getElementById(`cell-${row}-${col}`);
+                if (cell) cell.classList.remove('error');
+            }
+            
+            const oldValue = grid[row][col];
+            let newValue = EMPTY;
+            
+            // Döngü: EMPTY -> SUN -> MOON -> EMPTY
+            if (grid[row][col] === EMPTY) {
+                newValue = SUN;
+            } else if (grid[row][col] === SUN) {
+                newValue = MOON;
+            } else if (grid[row][col] === MOON) {
+                newValue = EMPTY;
+            }
+            
+            grid[row][col] = newValue;
+            
+            // Hücreyi yeniden al (güncellemek için)
+            const cell = document.getElementById(`cell-${row}-${col}`);
+            
+            // Görünümü güncelle
+            if (newValue === SUN) {
+                cell.textContent = '☀️';
+                cell.classList.add('sun');
+                cell.classList.remove('moon', 'error');
+            } else if (newValue === MOON) {
+                cell.textContent = '🌙';
+                cell.classList.remove('sun');
+                cell.classList.add('moon');
+                cell.classList.remove('error');
+            } else {
+                cell.textContent = '';
+                cell.classList.remove('sun', 'moon', 'error');
+            }
+            
+            // Geçerli move - history'ye ekle
+            history.push({row: row, col: col, oldValue: oldValue});
+            document.getElementById('undoBtn').disabled = history.length === 0;
+            document.getElementById('message').textContent = '';
+            
+            // 3 saniye sonra kontrol et - eğer hatalıysa geri al
+            errorTimeout = setTimeout(() => {
+                // Hata kontrol et
+                const rowSun = Array.from({length: 6}, (_, j) => grid[row][j] === SUN ? 1 : 0).reduce((a,b) => a+b);
+                const rowMoon = Array.from({length: 6}, (_, j) => grid[row][j] === MOON ? 1 : 0).reduce((a,b) => a+b);
+                const colSun = Array.from({length: 6}, (_, i) => grid[i][col] === SUN ? 1 : 0).reduce((a,b) => a+b);
+                const colMoon = Array.from({length: 6}, (_, i) => grid[i][col] === MOON ? 1 : 0).reduce((a,b) => a+b);
+                
+                // 3 yan yana kontrol
+                let threeInRow = false;
+                for (let j = 0; j <= 3; j++) {
+                    if (grid[row][j] !== EMPTY && 
+                        grid[row][j] === grid[row][j+1] && 
+                        grid[row][j] === grid[row][j+2]) {
+                        threeInRow = true;
+                        break;
+                    }
+                }
+                
+                // 3 üst üste kontrol
+                let threeInCol = false;
+                for (let i = 0; i <= 3; i++) {
+                    if (grid[i][col] !== EMPTY && 
+                        grid[i][col] === grid[i+1][col] && 
+                        grid[i][col] === grid[i+2][col]) {
+                        threeInCol = true;
+                        break;
+                    }
+                }
+                
+                // Hata varsa geri al
+                if (threeInRow || threeInCol || rowSun > 3 || rowMoon > 3 || colSun > 3 || colMoon > 3) {
+                    // Geri al
+                    grid[row][col] = oldValue;
+                    
+                    // Görünümü getir
+                    if (oldValue === SUN) {
+                        cell.textContent = '☀️';
+                        cell.classList.add('sun');
+                        cell.classList.remove('moon');
+                    } else if (oldValue === MOON) {
+                        cell.textContent = '🌙';
+                        cell.classList.remove('sun');
+                        cell.classList.add('moon');
+                    } else {
+                        cell.textContent = '';
+                        cell.classList.remove('sun', 'moon');
+                    }
+                    
+                    // History'den çıkar
+                    history.pop();
+                    document.getElementById('undoBtn').disabled = history.length === 0;
+                    
+                    // Uyarı göster
+                    document.getElementById('message').className = 'message error-msg';
+                    document.getElementById('message').textContent = 'Hata yaptınız!';
+                    cell.classList.add('error');
+                    
+                    errorCount++;
+                    document.getElementById('error').textContent = errorCount;
+                    
+                    errorTimeout = null;
+                }
+            }, 3000);
+        }
+
+        function undoMove() {
+            if (history.length === 0) return;
+            
+            const move = history.pop();
+            grid[move.row][move.col] = move.oldValue;
+            
+            document.getElementById('undoBtn').disabled = history.length === 0;
+            displayGrid();
+            document.getElementById('message').textContent = '';
+        }
+
+        function undoLastMove() {
+            if (history.length === 0) return;
+            
+            const move = history.pop();
+            grid[move.row][move.col] = move.oldValue;
+            
+            document.getElementById('undoBtn').disabled = history.length === 0;
+            displayGrid();
+        }
+
+        function checkSolution() {
+            const messageDiv = document.getElementById('message');
+            
+            if (checkThreeConsecutive(grid)) {
+                messageDiv.className = 'message error-msg';
+                messageDiv.textContent = '3 yanyana veya ustu uste olamaz!';
+                errorCount++;
+                document.getElementById('error').textContent = errorCount;
+                return;
+            }
+            
+            for (let i = 0; i < 6; i++) {
+                let sunCount = 0, moonCount = 0;
+                
+                for (let j = 0; j < 6; j++) {
+                    if (grid[i][j] === SUN) sunCount++;
+                    else if (grid[i][j] === MOON) moonCount++;
+                }
+                
+                if (sunCount !== 3 || moonCount !== 3) {
+                    messageDiv.className = 'message error-msg';
+                    messageDiv.textContent = 'Satir hatali - 3 gunus ve 3 ay olmali';
+                    errorCount++;
+                    document.getElementById('error').textContent = errorCount;
+                    return;
+                }
+            }
+            
+            for (let j = 0; j < 6; j++) {
+                let sunCount = 0, moonCount = 0;
+                
+                for (let i = 0; i < 6; i++) {
+                    if (grid[i][j] === SUN) sunCount++;
+                    else if (grid[i][j] === MOON) moonCount++;
+                }
+                
+                if (sunCount !== 3 || moonCount !== 3) {
+                    messageDiv.className = 'message error-msg';
+                    messageDiv.textContent = 'Sutun hatali - 3 gunus ve 3 ay olmali';
+                    errorCount++;
+                    document.getElementById('error').textContent = errorCount;
+                    return;
+                }
+            }
+            
+            messageDiv.className = 'message success';
+            messageDiv.textContent = 'Bölümü bitirdin! ';
+            
+            // Sonraki Bölüm butonu ekle
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = 'Sonraki Bölüm';
+            nextBtn.style.marginLeft = '10px';
+            nextBtn.onclick = () => {
+                currentLevel++;
+                cup += 1000000;
+                
+                document.getElementById('level').textContent = currentLevel;
+                document.getElementById('cup').textContent = cup;
+                
+                if (currentLevel > 100) {
+                    document.getElementById('gameArea').style.display = 'none';
+                    document.getElementById('gameOver').style.display = 'block';
+                } else {
+                    generatePuzzle();
+                    displayGrid();
+                    messageDiv.textContent = '';
+                    document.getElementById('undoBtn').disabled = true;
+                    if (showHints) displayHints();
+                }
+            };
+            messageDiv.appendChild(nextBtn);
+        }
+
+        function resetLevel() {
+            generatePuzzle();
+            displayGrid();
+            document.getElementById('message').textContent = '';
+            document.getElementById('undoBtn').disabled = true;
+            if (showHints) displayHints();
+        }
+
+        generatePuzzle();
+        displayGrid();
+        document.getElementById('undoBtn').disabled = true;
+        
+        // Şifre kontrolü - ENTER tuşu ile
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const input = e.target.value.trim();
+                
+                if (input === 'Lalye') {
+                    showHints = true;
+                    document.getElementById('hintsArea').style.display = 'block';
+                    displayHints();
+                    e.target.value = '';
+                    document.getElementById('passwordInput').style.borderColor = '#4CAF50';
+                } else if (input !== '') {
+                    // Yanlış şifre - hata mesajı
+                    document.getElementById('passwordInput').style.borderColor = '#f44336';
+                    document.getElementById('passwordInput').placeholder = 'Yanlış şifre!';
+                    e.target.value = '';
+                    setTimeout(() => {
+                        document.getElementById('passwordInput').style.borderColor = '#ddd';
+                        document.getElementById('passwordInput').placeholder = 'Şifreni yaz...';
+                    }, 2000);
+                }
+            }
+        });
+        
+        function displayHints() {
+            const hintsList = document.getElementById('hintsList');
+            hintsList.innerHTML = '';
+            
+            // Tüm grid'i analiz et ve ipuçlarını göster
+            let hints = [];
+            
+            // Satır ipuçları
+            for (let i = 0; i < 6; i++) {
+                let sunCount = 0, moonCount = 0, emptyCount = 0;
+                for (let j = 0; j < 6; j++) {
+                    if (grid[i][j] === SUN) sunCount++;
+                    else if (grid[i][j] === MOON) moonCount++;
+                    else if (grid[i][j] === EMPTY) emptyCount++;
+                }
+                const sunNeed = 3 - sunCount;
+                const moonNeed = 3 - moonCount;
+                hints.push(`<strong>Satır ${i+1}:</strong> ☀️ ${sunCount}/3 (${sunNeed} gerek)  |  🌙 ${moonCount}/3 (${moonNeed} gerek)`);
+            }
+            
+            hints.push('<br>');
+            
+            // Sütun ipuçları
+            for (let j = 0; j < 6; j++) {
+                let sunCount = 0, moonCount = 0, emptyCount = 0;
+                for (let i = 0; i < 6; i++) {
+                    if (grid[i][j] === SUN) sunCount++;
+                    else if (grid[i][j] === MOON) moonCount++;
+                    else if (grid[i][j] === EMPTY) emptyCount++;
+                }
+                const sunNeed = 3 - sunCount;
+                const moonNeed = 3 - moonCount;
+                hints.push(`<strong>Sütun ${j+1}:</strong> ☀️ ${sunCount}/3 (${sunNeed} gerek)  |  🌙 ${moonCount}/3 (${moonNeed} gerek)`);
+            }
+            
+            hintsList.innerHTML = hints.join('<br>');
+        }
+        
+        function closeHints() {
+            showHints = false;
+            document.getElementById('hintsArea').style.display = 'none';
+            document.getElementById('passwordInput').value = '';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Oyunu</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        h1 { color: #667eea; margin-bottom: 20px; text-align: center; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .stat {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .stat-label { font-size: 0.9em; color: #666; }
+        .stat-value { font-size: 2em; color: #667eea; margin-top: 5px; }
+        .question {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 5px solid #667eea;
+        }
+        .question h2 { font-size: 1.1em; margin-bottom: 20px; color: #333; line-height: 1.5; }
+        .options {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .option {
+            background: white;
+            border: 2px solid #ddd;
+            padding: 12px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            font-size: 0.95em;
+        }
+        .option:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        .option.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover { background: #764ba2; }
+        .message {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1em;
+        }
+        .correct { background: #d4edda; color: #155724; }
+        .incorrect { background: #fff3cd; color: #856404; }
+        .game-over {
+            text-align: center;
+        }
+        .game-over h2 { color: #667eea; margin-bottom: 20px; }
+        .final-score { font-size: 2.5em; color: #667eea; margin: 20px 0; }
+        a {
+            display: inline-block;
+            margin: 10px 5px;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        a:hover { background: #764ba2; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Quiz Oyunu</h1>
+        
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">Soru</div>
+                <div class="stat-value" id="questionNum">1/300</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Puan</div>
+                <div class="stat-value" id="score">0</div>
+            </div>
+        </div>
+
+        <div id="gameContent">
+            <div class="question">
+                <h2 id="question">Yükleniyor...</h2>
+                <div class="options" id="options"></div>
+                <button onclick="checkAnswer()">Cevap Gönder</button>
+                <div id="message"></div>
+            </div>
+        </div>
+
+        <div id="gameOverScreen" style="display: none;">
+            <div class="game-over">
+                <h2>Oyun Bitti</h2>
+                <div class="final-score" id="finalScore">0</div>
+                <a href="javascript:location.reload()">Yeniden Başla</a>
+                <a href="index.html">Anasayfa</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {q: "Schrödinger'in ünlü deneyindeki kedi hangi iki durumda?", options: ["Uyuyor ya da uyanık", "Hem ölü hem canlı", "Hareket ediyor ya da hareketsiz", "Görünür ya da görünmez"], correct: "Hem ölü hem canlı"},
+            {q: "Planck sabiti yaklaşık kaç joule saniye?", options: ["3.14e-34", "6.626e-34", "9.81e-34", "1.38e-23"], correct: "6.626e-34"},
+            {q: "Heisenberg'in belirsizlik ilkesine göre neyin beraber tam olarak bilinmez?", options: ["Hız ve yön", "Yer ve momentum", "Zaman ve enerji", "Açı ve hız"], correct: "Yer ve momentum"},
+            {q: "Pauli dışlama ilkesine göre aynı orbital'de kaç elektron bulunabilir?", options: ["1", "2", "3", "4"], correct: "2"},
+            {q: "Bohr modelinde birinci orbital yarıçapı kaç Angstrom?", options: ["0.29", "0.53", "0.89", "1.06"], correct: "0.53"},
+            {q: "Atomun iç yapısını keşfeden Rutherford'un deney sonucu ne olmuştur?", options: ["Atomun homojen olduğu", "Çekirdek modeli", "Elektron bulutları", "Nötronlar"], correct: "Çekirdek modeli"},
+            {q: "Elektronegativitenin en yüksek olduğu element hangisidir?", options: ["Klor", "Oksijen", "Flor", "Azot"], correct: "Flor"},
+            {q: "Kovalen bağ hangi orbitallerin çakışması sonucu oluşur?", options: ["s ve p", "Sigma ve pi", "d ve f", "Ana ve yer"], correct: "Sigma ve pi"},
+            {q: "sp3 hibridizasyon kaç derece açı yapar?", options: ["90", "109.5", "120", "180"], correct: "109.5"},
+            {q: "Aromatik bileşiklerin Hückel kuralına göre pi elektronu kaç olmalı?", options: ["2n", "4n", "4n+2", "6n"], correct: "4n+2"},
+            {q: "Benzen'de C-C bağ uzunluğu yaklaşık kaç Angstrom?", options: ["1.20", "1.39", "1.54", "1.67"], correct: "1.39"},
+            {q: "Termodinamiğin ikinci yasası ne söyler?", options: ["Enerji korunur", "Entropi artar", "Sıcaklık dengesi", "Basınç sabit"], correct: "Entropi artar"},
+            {q: "Gibbs serbest enerjisi formülü nedir?", options: ["G = H + TS", "G = H - TS", "G = E + PV", "G = U + PV"], correct: "G = H - TS"},
+            {q: "Boltzmann sabiti yaklaşık kaç joule kelvin?", options: ["1.38e-23", "6.022e23", "8.314", "1.098e7"], correct: "1.38e-23"},
+            {q: "Avogadro sayısı kaç parçacıktan oluşur?", options: ["3.14e23", "6.022e23", "9.81e23", "1.38e24"], correct: "6.022e23"},
+            {q: "Osmotik basınç formülünde pi hangi eşitlikle verilir?", options: ["pi = MRT", "pi = nRT/V", "pi = PV/nR", "pi = E/mc2"], correct: "pi = nRT/V"},
+            {q: "Donma noktası depresyonu sabiti su için kaç derece kg mol?", options: ["0.51", "1.86", "2.44", "3.63"], correct: "1.86"},
+            {q: "Ka değeri arttıkça asit gücü nasıl değişir?", options: ["Azalır", "Artar", "Değişmez", "Negatif olur"], correct: "Artar"},
+            {q: "pH=pKa olduğunda tampon çözeltide asit baz oranı kaçtır?", options: ["1:2", "1:1", "2:1", "3:1"], correct: "1:1"},
+            {q: "Nernst denklemi hangi potansiyeli hesaplamak için kullanılır?", options: ["Iç potansiyel", "Yüzey potansiyali", "Elektrot potansiyeli", "Kimyasal potansiyel"], correct: "Elektrot potansiyeli"},
+            {q: "Faraday sabiti yaklaşık kaç coulomb mol?", options: ["8314", "6.022e23", "96485", "1.38e-23"], correct: "96485"},
+            {q: "Reaksiyon sırası kaç tarafından belirlenir?", options: ["Stokiyometrik katsayılardan", "Hız sabiti katsayılarından", "Ön faktörden", "Deneysel üslerin toplamından"], correct: "Deneysel üslerin toplamından"},
+            {q: "Arrhenius denklemi hangi enerjiyi içerir?", options: ["Kinetik enerji", "Aktivasyon enerjisi", "İç enerji", "Elastik enerji"], correct: "Aktivasyon enerjisi"},
+            {q: "Katalizatör reaksiyonun hangi enerjisini düşürür?", options: ["Potansiyel enerjisi", "Kinetik enerjisi", "Aktivasyon enerjisi", "İç enerjisi"], correct: "Aktivasyon enerjisi"},
+            {q: "Michaelis Menten denkleminde Km neyi temsil eder?", options: ["Enzim konsantrasyonu", "Maksimum hız", "Substrat konsantrasyonu", "Hız sabiti"], correct: "Substrat konsantrasyonu"},
+            {q: "Enzim inhibisyonunda Ki değeri ne belirtir?", options: ["Inhibitör bağlanma sabiti", "İnhibisyon derecesi", "Hız sabiti", "Affinite sabitesi"], correct: "İnhibitör bağlanma sabiti"},
+            {q: "DNA'nın çift sarmalin dönüş yönü hangi tarafa?", options: ["Sola", "Sağa", "Rastgele", "Hiç"], correct: "Sağa"},
+            {q: "DNA'da A-T tabanları arasında kaç hidrojen bağı vardır?", options: ["1", "2", "3", "4"], correct: "2"},
+            {q: "DNA'da G-C tabanları arasında kaç hidrojen bağı vardır?", options: ["1", "2", "3", "4"], correct: "3"},
+            {q: "DNA'nın 5' ucunda hangi kimyasal grup vardır?", options: ["Hidroksil", "Amino", "Fosfat", "Karboksil"], correct: "Fosfat"},
+            {q: "RNA'da timine yerine hangi baz vardır?", options: ["Sitozin", "Urasil", "Gyanin", "Adenin"], correct: "Urasil"},
+            {q: "Ribosom'da rRNA içeriği yüzde kaçtır?", options: ["30", "45", "60", "80"], correct: "60"},
+            {q: "Mitokondrial DNA'nın yapısı nasıldır?", options: ["Lineer", "Dairesel", "Dallanmış", "Halka"], correct: "Dairesel"},
+            {q: "Telomeraz'ın görevi nedir?", options: ["DNA onarma", "Telomer kısaltma", "Telomer uzatma", "Histone sentezi"], correct: "Telomer uzatma"},
+            {q: "Nucleosom'da DNA kaç turda sarılır?", options: ["0.5", "1", "1.65", "2"], correct: "1.65"},
+            {q: "Chromatin'de nucleosom aralığı kaç baz çiftir?", options: ["147", "200", "300", "500"], correct: "200"},
+            {q: "Epigenetik değişiklikler DNA'yı nasıl etkiler?", options: ["Mutasyon oluşturarak", "Mutasyon olmaksızın", "Kopya sayısını değiştirerek", "Sekuans değiştirerek"], correct: "Mutasyon olmaksızın"},
+            {q: "DNA metilasyonu hangi tabanı hedef alır?", options: ["Adenin", "Guanin", "Sitozin", "Timin"], correct: "Sitozin"},
+            {q: "Histon acetilasyonu genin ekspresyonunu nasıl etkiler?", options: ["Azaltır", "Durdurur", "Arttırır", "Değişmez"], correct: "Arttırır"},
+            {q: "mRNA'nın 5' ucuna hangi yapı eklenir?", options: ["Poly-A", "Methyl-G", "7-methyl guanosine", "GTP"], correct: "7-methyl guanosine"},
+            {q: "mRNA'nın 3' ucuna hangi kuyruk eklenir?", options: ["Methyl tail", "Poly-A tail", "GTP tail", "UTP tail"], correct: "Poly-A tail"},
+            {q: "tRNA'nın yapısında kaç bölüm vardır?", options: ["2", "3", "4", "5"], correct: "4"},
+            {q: "Protein sentezinde başlama kodonu hangisidir?", options: ["UAA", "UGA", "AUG", "UUU"], correct: "AUG"},
+            {q: "Genetik kodda stop kodon kaç tanedir?", options: ["1", "2", "3", "4"], correct: "3"},
+            {q: "Chaperone proteinleri neyi sağlarlar?", options: ["Protein bölünmesi", "Protein doğru katlanması", "Protein yıkılması", "Protein iletişimi"], correct: "Protein doğru katlanması"},
+            {q: "Hemoglobin'in kuaterner yapısında kaç subunit vardır?", options: ["2", "3", "4", "5"], correct: "4"},
+            {q: "Kollajen'de karakteristik amino asit hangisidir?", options: ["Alanin", "Glisin", "Prolin", "Serine"], correct: "Prolin"},
+            {q: "Apoptoz'da kaç pathway vardır?", options: ["1", "2", "3", "4"], correct: "2"},
+            {q: "Intrinsik apoptoz yolunda anahtar protein hangisidir?", options: ["Fas", "TNF", "Bax", "Bid"], correct: "Bax"},
+            {q: "Kaspaz-3 apoptozda ne işlevi görür?", options: ["Başlatıcı", "Executor", "Inhibitör", "Regülatör"], correct: "Executor"},
+            {q: "Senillik hücre kaçıncı bölünmeden sonra oluşur?", options: ["30-40", "40-50", "50-70", "70-90"], correct: "50-70"},
+            {q: "p53 geni kaç eksonda bulunur?", options: ["8", "9", "10", "11"], correct: "11"},
+            {q: "RB proteininin fosforilasyonu hangi kinaz yapar?", options: ["MAPK", "CDK", "JAK", "Src"], correct: "CDK"},
+            {q: "MHC I kaç alfa zincir lobu vardır?", options: ["1", "2", "3", "4"], correct: "3"},
+            {q: "MHC II heterodimer'de hangileri bulunur?", options: ["Alfa-alfa", "Beta-beta", "Alfa-beta", "Gama-delta"], correct: "Alfa-beta"},
+            {q: "TCR affinitesi hangi aralıkta?", options: ["0.01-1 pM", "1-100 pM", "100-1000 pM", "1000+ pM"], correct: "1-100 pM"},
+            {q: "CDR kaç bölgesi vardır TCR'de?", options: ["2", "3", "4", "5"], correct: "3"},
+            {q: "V D J rekombinasyon RAG hangi protein?", options: ["Helikaz", "Endonükleaz", "Kinaz", "Fosfataz"], correct: "Endonükleaz"},
+            {q: "Somatik hipermutasyon kaç mutasyon hızında olur?", options: ["10-4", "10-3", "10-2", "10-1"], correct: "10-3"},
+            {q: "Class switch rekombinasyon AID enzimi nedir?", options: ["Polimeraz", "Desaminaz", "Protease", "Kinaz"], correct: "Desaminaz"},
+            {q: "Affinity maturation nerede gerçekleşir?", options: ["Timuş", "Kemik iliği", "Lenfoid nodül", "Germinal merkez"], correct: "Germinal merkez"},
+            {q: "Follicular helper T hücre hangi markerle tanımlanır?", options: ["CD4+ CXCR5+", "CD4+ CXCR3+", "CD8+ CXCR5+", "CD4+ CCR7+"], correct: "CD4+ CXCR5+"},
+            {q: "Complement aktivasyonu kaç yolla olur?", options: ["1", "2", "3", "4"], correct: "3"},
+            {q: "C3 bileşeni neden önemli?", options: ["Sadece klasik yol", "Sadece alternatif yol", "Tüm yollarda kritik", "Yok sayılabilir"], correct: "Tüm yollarda kritik"},
+            {q: "MAC oluşumu hangi C bileşeni ile başlar?", options: ["C3", "C4", "C5", "C6"], correct: "C5"},
+            {q: "Sitokin IL-2 kaç hücre tarafından üretilir?", options: ["T hücresi", "B hücresi", "Makrofaj", "Tümü"], correct: "T hücresi"},
+            {q: "IFN-gamma üreticileri hangileridir?", options: ["Th2", "Th1 CTL NK", "B hücreleri", "Fibroblastlar"], correct: "Th1 CTL NK"},
+            {q: "IL-10 hangi sitokin kategorisidir?", options: ["Pro-enflamatuvar", "Anti-enflamatuvar", "Nötr", "Hemostaz"], correct: "Anti-enflamatuvar"},
+            {q: "TNF-alpha reseptörü kaç tipten?", options: ["1", "2", "3", "4"], correct: "2"},
+            {q: "NF-kB aktivasyonu hangi kompleks tarafından?", options: ["Proteasom", "IKK", "Lysosom", "Ribosom"], correct: "IKK"},
+            {q: "MAPK kaskadı kaç temel pathway vardır?", options: ["1", "2", "3", "4"], correct: "3"},
+            {q: "JAK STAT yolu hangi sitokinle aktive olur?", options: ["TNF", "IL-2", "IFN", "TGF-beta"], correct: "IFN"},
+            {q: "PI3K AKT yolu hangi işlemleri kontrol eder?", options: ["Ölüm", "Büyüme", "Yaşlılık", "Nekroz"], correct: "Büyüme"},
+            {q: "mTOR signaling hangi yolla aktive?", options: ["PKA", "PKC", "PI3K AKT", "JAK"], correct: "PI3K AKT"},
+            {q: "Wnt signaling'de anahtar protein hangisi?", options: ["Frizzled", "Beta-katenin", "GSK-3", "Hepsi"], correct: "Hepsi"},
+            {q: "Notch signaling kaç ligand vardır?", options: ["3", "4", "5", "6"], correct: "5"},
+            {q: "Hedgehog signaling Patched protein nedir?", options: ["Ligand", "Reseptor", "Efektör", "Kinaz"], correct: "Reseptor"},
+            {q: "BMP signaling R-SMAD hangisidir?", options: ["SMAD 2 3", "SMAD 1 5 8", "SMAD 4", "SMAD 6 7"], correct: "SMAD 1 5 8"},
+            {q: "TGF-beta reseptörü hangi kinaz türü?", options: ["Tirozin", "Serine/threonin", "Histidin", "Arginin"], correct: "Serine/threonin"},
+            {q: "FGF signaling FGFR kaç izoform?", options: ["2", "3", "4", "5"], correct: "4"},
+            {q: "Ras proteininin GTPase aktivitesi nedir?", options: ["Sinyallemesi", "Üretimi", "Hidrolizi", "Sekuestrasyonu"], correct: "Hidrolizi"},
+            {q: "RAF kinaz hangi protein ile aktive?", options: ["Src", "Ras", "PKA", "PKC"], correct: "Ras"},
+            {q: "MEK kaç kinaz izoform vardır?", options: ["1", "2", "3", "4"], correct: "2"},
+            {q: "ERK1 ERK2 farkı nedir?", options: ["Lokalizasyon", "Türetilmiş", "İşlev", "Yok"], correct: "Türetilmiş"},
+            {q: "PKA katalitik subunit kaç tane?", options: ["1", "2", "3", "4"], correct: "2"},
+            {q: "PKC izoformu kaç tanedir?", options: ["8", "10", "12", "14"], correct: "12"},
+            {q: "CaMKII autofosforilasyon yapabilir mi?", options: ["Hayır", "Evet", "Sadece komplekste", "Koşullu"], correct: "Evet"},
+            {q: "Calmodulin hangi protein tarafından bağlanır?", options: ["CaM-KI", "CaMKII", "CaMKIV", "Hepsi"], correct: "Hepsi"},
+            {q: "Glikogen fosforilaz kinaz nedir?", options: ["Protein kinaz", "Kinaz kinaz", "Fosfataz", "Protease"], correct: "Kinaz kinaz"},
+            {q: "Glikogen sinteraz inhibisyonu yapan hangisi?", options: ["GSK-2", "GSK-3", "GSK-4", "GSK-5"], correct: "GSK-3"},
+            {q: "Hexokinase inhibisyonu hangi ürün yapar?", options: ["Glukoz-1-fosfat", "Glukoz-6-fosfat", "Fruktoz-6-fosfat", "Fruktoz-1,6-bifosfat"], correct: "Glukoz-6-fosfat"},
+            {q: "Fosfofruktokinaz-2 kontrolü hangi modülatör yapar?", options: ["Asitlik", "Hipoksiya", "PF-2-6-BP", "Hepsi"], correct: "PF-2-6-BP"},
+            {q: "Piruvat dehidrogenaz kompleks kaç subunit?", options: ["2", "3", "4", "5"], correct: "3"},
+            {q: "Asetat CoA'nın kaynağı glikolizde hangisi?", options: ["Propionil-CoA", "Piruvat", "Okaloasetat", "Malonil-CoA"], correct: "Piruvat"},
+            {q: "Yağ asidi senteraz hangi ek yapar?", options: ["1", "2", "3", "4"], correct: "2"},
+            {q: "Ketogenez nerede oluşur?", options: ["Sitoplazma", "Mitokondri", "Peroksizom", "ER"], correct: "Mitokondri"},
+            {q: "Beta oksidasyonu hangi organelde?", options: ["Sitoplazma", "Mitokondri", "Peroksizom", "ER"], correct: "Mitokondri"},
+            {q: "Kolesterol senteraz kaç acetil CoA?", options: ["2", "3", "4", "5"], correct: "2"},
+            {q: "Lipoprotein lipaz nerede bulunur?", options: ["Kan", "Kapiller endoteli", "Hepatosit", "Adiposit"], correct: "Kapiller endoteli"},
+            {q: "VLDL yoğunluğu kaç g/cm3?", options: ["0.95-1.006", "1.006-1.019", "1.019-1.063", "1.063-1.21"], correct: "0.95-1.006"},
+            {q: "LDL yoğunluğu kaç g/cm3?", options: ["0.95-1.006", "1.006-1.019", "1.019-1.063", "1.063-1.21"], correct: "1.019-1.063"},
+            {q: "HDL yoğunluğu kaç g/cm3?", options: ["0.95-1.006", "1.019-1.063", "1.063-1.21", "1.21+"], correct: "1.063-1.21"},
+            {q: "IDL yoğunluğu kaç g/cm3?", options: ["0.95-1.006", "1.006-1.019", "1.019-1.063", "1.063-1.21"], correct: "1.006-1.019"},
+            {q: "Sirt1 aktivatörü hangisidir?", options: ["Metformin", "Resveratrol", "Rapamysin", "Statinler"], correct: "Resveratrol"},
+            {q: "Sirt3 lokalizasyonu nedir?", options: ["Sitozol", "Mitokondri", "Çekirdek", "ER"], correct: "Mitokondri"},
+            {q: "NAD+ biyosentezi hangi yol?", options: ["Shikimate", "Kynurenin", "Aspartat", "Glyseraldehit"], correct: "Kynurenin"},
+            {q: "ATP sentaz ATP yapımı için kaç proton?", options: ["2", "3", "3-4", "5"], correct: "3-4"},
+            {q: "Kompleks I kaç proton pompalar?", options: ["2", "3", "4", "5"], correct: "4"},
+            {q: "Kompleks II hangi sitozin transfer?", options: ["Cyt c", "Cyt a", "Cyt b", "Cyt f"], correct: "Cyt c"},
+            {q: "Kompleks III hangi mekanizma?", options: ["Sequential", "Q cycle", "Port", "Shuttle"], correct: "Q cycle"},
+            {q: "Kompleks IV sitozin oksidaz nedir?", options: ["aa3", "ba3", "caa3", "bb3"], correct: "aa3"},
+            {q: "Elektron potansiyali elektron kaçta?", options: ["0.4", "0.6", "0.8", "1.0"], correct: "0.8"},
+            {q: "Proton gradyan kaç psi?", options: ["100", "150", "180", "220"], correct: "180"},
+            {q: "Sodyum potasyum pompası kaç ATP?", options: ["1", "2", "3", "4"], correct: "1"},
+            {q: "Kalsiyum ATPase SERCA kaç Ca2+ taşır?", options: ["1", "2", "3", "4"], correct: "2"},
+            {q: "Glukoz transporter GLUT1 nedir?", options: ["Antiporter", "Uniporter", "Symporter", "Kanał"], correct: "Uniporter"},
+            {q: "SGLT1 kotransporter hangisi?", options: ["Na+-Glu", "Cl--OH-", "H+-Ca2+", "K+-Na+"], correct: "Na+-Glu"},
+            {q: "Sodyum kalsiyum değiştiricisi nedir?", options: ["Symporter", "Antiporter", "Uniporter", "Pompa"], correct: "Antiporter"},
+            {q: "pH gradyan pH iç dış nedir?", options: ["6.8-7.2", "7.2-7.4", "7.4-7.6", "7.8-8.0"], correct: "7.2-7.4"},
+            {q: "Mitokondri iç pH kaç?", options: ["6.5", "7.0", "8.0", "8.5"], correct: "8.0"},
+            {q: "Sitoplazma pH kaç?", options: ["6.8", "7.2", "7.4", "7.8"], correct: "7.2"},
+            {q: "Vaküol pH kaç?", options: ["3.5-4.5", "4.5-5.5", "5.5-6.5", "6.5-7.5"], correct: "5.5-6.5"},
+            {q: "Endosom pH kaç?", options: ["4.5", "5.0", "6.0", "7.0"], correct: "6.0"},
+            {q: "Lizozom pH kaç?", options: ["3.5-4.5", "4.5-5.5", "5.5-6.5", "6.5-7.5"], correct: "4.5-5.5"},
+            {q: "Glutamat dehidrogenaz anaplerotic midir?", options: ["Hayır", "Evet", "Çoğunlukla", "Koşullu"], correct: "Evet"},
+            {q: "PEP karboksilaz primer substrate hangisi?", options: ["Piruvat", "PEP", "Okaloasetat", "Malonil"], correct: "PEP"},
+            {q: "Malat aspartat shuttle nereye gitsin?", options: ["Sitozol", "Mitokondri", "ER", "Peroksizom"], correct: "Mitokondri"},
+            {q: "Pentoz fosfat yolu hangi ürün?", options: ["ATP", "NADPH R5P", "GTP", "FAD"], correct: "NADPH R5P"},
+            {q: "Gliseroldehit-3-fosfat dehidrogenaz kofaktörü?", options: ["FAD", "NAD+", "NADP+", "FMN"], correct: "NAD+"},
+            {q: "Ester bağı oluşumu nedir reaksiyonda?", options: ["Adisyon", "Dehidrasyonu", "Süpstitüsyon", "Redoks"], correct: "Dehidrasyonu"},
+            {q: "Peptid bağı hangisini oluşturur?", options: ["N-C", "O-H", "C-N", "S-S"], correct: "C-N"},
+            {q: "Disulfid bağı hangisinde oluşur?", options: ["Tirosin", "Prolin", "Sistein", "Histidin"], correct: "Sistein"},
+            {q: "Aromatik amino asitleri hangisi?", options: ["Lys Arg His", "Asp Glu Asn", "Phe Tyr Trp", "Leu Ile Val"], correct: "Phe Tyr Trp"},
+            {q: "Branşlı amino asitleri hangisi?", options: ["Met Cys Ser", "Leu Ile Val", "Asp Glu Asn", "Phe Tyr Trp"], correct: "Leu Ile Val"},
+            {q: "Sülfür amino asitleri hangisi?", options: ["Phe Tyr", "Met Cys", "Leu Val", "Asp Glu"], correct: "Met Cys"},
+            {q: "İmino asit hangisi?", options: ["Tirosin", "Prolin", "Sistein", "Lizin"], correct: "Prolin"},
+            {q: "Basik amino asitleri hangisi?", options: ["Asp Glu", "Lys Arg His", "Ser Thr", "Phe Tyr"], correct: "Lys Arg His"},
+            {q: "Asidik amino asitleri hangisi?", options: ["Lys Arg His", "Asp Glu", "Phe Tyr Trp", "Leu Ile Val"], correct: "Asp Glu"},
+            {q: "Polar amino asitleri hangisi?", options: ["Val Ile Leu", "Ser Thr Asn Gln", "Phe Trp", "Pro"], correct: "Ser Thr Asn Gln"},
+            {q: "Hidrofobik amino asitleri hangisi?", options: ["Asp Glu", "Ala Val Ile Leu Phe", "Ser Thr", "Pro"], correct: "Ala Val Ile Leu Phe"},
+            {q: "Essensiyel amino asit kaçı?", options: ["7", "8", "9", "10"], correct: "9"},
+            {q: "Koşullu essensiyel amino asit hangisi?", options: ["Val Ile Leu", "Arg", "Phe Tyr", "Met"], correct: "Arg"},
+            {q: "Purine nükleotid kaçı vardır?", options: ["1", "2", "3", "4"], correct: "2"},
+            {q: "Pirimidin nükleotid kaçı vardır?", options: ["1", "2", "3", "4"], correct: "3"},
+            {q: "Ribose şekeri kaç atom vardır?", options: ["3", "4", "5", "6"], correct: "5"},
+            {q: "Deoksiribose şekeri kaç atom vardır?", options: ["3", "4", "5", "6"], correct: "5"},
+            {q: "DNA major groove kaç genişlik?", options: ["12Å", "14Å", "22Å", "12Å"], correct: "22Å"},
+            {q: "DNA minor groove kaç genişlik?", options: ["12Å", "14Å", "22Å", "20Å"], correct: "12Å"},
+            {q: "DNA B formu heliks pitch kaç Å?", options: ["25", "30", "34", "40"], correct: "34"},
+            {q: "Nukleotid kaç bileşenden oluşur?", options: ["2", "3", "4", "5"], correct: "3"},
+            {q: "Fosfodiester bağı nedir yapısında?", options: ["C-N", "C-O-P-O-C", "N-H", "S-S"], correct: "C-O-P-O-C"}
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let selectedOption = null;
+
+        function showQuestion() {
+            if (currentQuestion >= questions.length) {
+                endGame();
+                return;
+            }
+            const q = questions[currentQuestion];
+            document.getElementById('question').textContent = q.q;
+            document.getElementById('questionNum').textContent = (currentQuestion + 1) + '/' + questions.length;
+            document.getElementById('message').innerHTML = '';
+            selectedOption = null;
+            
+            const optionsDiv = document.getElementById('options');
+            optionsDiv.innerHTML = '';
+            q.options.forEach((opt, idx) => {
+                const div = document.createElement('div');
+                div.className = 'option';
+                div.textContent = opt;
+                div.onclick = () => selectOption(opt, div);
+                optionsDiv.appendChild(div);
+            });
+        }
+
+        function selectOption(option, element) {
+            document.querySelectorAll('.option').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedOption = option;
+        }
+
+        function checkAnswer() {
+            if (!selectedOption) {
+                alert('Bir seçenek seç!');
+                return;
+            }
+            
+            const correct = questions[currentQuestion].correct;
+            const messageDiv = document.getElementById('message');
+
+            if (selectedOption === correct) {
+                messageDiv.innerHTML = 'Doğru +10 Puan';
+                messageDiv.className = 'message correct';
+                score += 10;
+                document.getElementById('score').textContent = score;
+                currentQuestion++;
+                setTimeout(showQuestion, 1000);
+            } else {
+                messageDiv.innerHTML = 'Yanlış! Doğru: ' + correct;
+                messageDiv.className = 'message incorrect';
+                currentQuestion++;
+                setTimeout(showQuestion, 2000);
+            }
+        }
+
+        function endGame() {
+            document.getElementById('gameContent').style.display = 'none';
+            document.getElementById('gameOverScreen').style.display = 'block';
+            document.getElementById('finalScore').textContent = score;
+        }
+
+        showQuestion();
+    </script>
+</body>
+</html>

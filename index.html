@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Legendary Website</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 50%, #16213e 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: #00d4ff;
+        }
+        .subtitle {
+            font-size: 1.1rem;
+            color: #aaa;
+            margin-bottom: 30px;
+        }
+        .games {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .game {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid #00d4ff;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 250px;
+        }
+        .game:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,212,255,0.3);
+        }
+        .emoji {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+        .name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 MY LEGENDARY WEBSITE 🎮</h1>
+            <p class="subtitle">Dünyanın En İyi Sitesi</p>
+        </header>
+        
+        <div class="games">
+            <a href="spy.html" class="game">
+                <div class="emoji">🕵️</div>
+                <div class="name">SPY</div>
+            </a>
+            <a href="iksir.html" class="game">
+                <div class="emoji">🧪</div>
+                <div class="name">İKSİR</div>
+            </a>
+            <a href="dinosairum.html" class="game">
+                <div class="emoji">🦕</div>
+                <div class="name">DINOSAIRUM</div>
+            </a>
+            <a href="satranc.html" class="game">
+                <div class="emoji">♔</div>
+                <div class="name">SATRANÇ</div>
+            </a>
+            <a href="tabu.html" class="game">
+                <div class="emoji">🚫</div>
+                <div class="name">TABU</div>
+            </a>
+            <a href="blockGame.html" class="game">
+                <div class="emoji">🧱</div>
+                <div class="name">BLOCKGAME</div>
+            </a>
+            <a href="nisanci.html" class="game">
+                <div class="emoji">🎯</div>
+                <div class="name">NİŞANCI</div>
+            </a>
+            <a href="quiz.html" class="game">
+                <div class="emoji">🧠</div>
+                <div class="name">QUIZ</div>
+            </a>
+            <a href="asci.html" class="game">
+                <div class="emoji">👨‍🍳</div>
+                <div class="name">AŞÇI</div>
+            </a>
+            <a href="tango.html" class="game">
+                <div class="emoji">🎯</div>
+                <div class="name">TANGO</div>
+            </a>
+            <a href="salon.html" class="game">
+                <div class="emoji">🗳️</div>
+                <div class="name">BELEDIYE BAŞKANI</div>
+            </a>
+        </div>
+        
+        <footer>
+            <p>💫 11 Oyun, Sonsuz Eğlence 💫</p>
+        </footer>
+    </div>
+</body>
+</html>

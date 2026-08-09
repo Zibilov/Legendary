@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tabu Oyunu</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+body{
+font-family:'Poppins',sans-serif;
+background:#f5f5f5;
+margin:0;
+padding:0;
+text-align:center;
+}
+
+.screen{display:none;padding:20px}
+.active{display:block}
+
+h1{font-size:34px;margin-bottom:10px}
+
+input{
+padding:14px;
+margin:10px;
+border-radius:14px;
+border:2px solid #ddd;
+width:80%;
+font-size:22px;
+font-weight:800;
+text-align:center;
+text-transform:uppercase;
+}
+
+button{
+padding:14px 22px;
+margin:8px;
+border:none;
+border-radius:16px;
+font-size:18px;
+font-weight:700;
+cursor:pointer;
+background:#222;
+color:white;
+}
+
+button.secondary{background:#777}
+button.red{background:#e53935}
+button.green{background:#2e7d32}
+button.disabled{background:#bbb;cursor:not-allowed}
+
+.timer{
+font-size:48px;
+font-weight:800;
+margin:10px;
+}
+
+.blink{
+animation:blinkAnim 1s infinite;
+}
+
+@keyframes blinkAnim{
+0%{opacity:1}
+50%{opacity:0.2}
+100%{opacity:1}
+}
+
+.redFlash{
+animation:redFlashAnim 0.6s infinite;
+}
+
+@keyframes redFlashAnim{
+0%{background:#f5f5f5}
+50%{background:#ff3b3b}
+100%{background:#f5f5f5}
+}
+
+.turnBanner{
+font-size:26px;
+font-weight:800;
+margin:10px;
+}
+
+.card{
+perspective:1000px;
+transform-style:preserve-3d;
+transition:transform 0.4s;
+
+background:white;
+padding:25px;
+border-radius:20px;
+box-shadow:0 6px 18px rgba(0,0,0,0.1);
+margin:20px auto;
+width:85%;
+max-width:420px;
+}
+
+.word{
+font-size:34px;
+font-weight:800;
+margin-bottom:15px;
+}
+
+.tabuWord{
+color:#e53935;
+font-weight:700;
+margin:4px;
+}
+
+.scoreBoard{
+font-size:22px;
+font-weight:700;
+margin-top:10px;
+}
+
+.bigButton{
+font-size:20px;
+padding:16px 30px;
+border-radius:20px;
+}
+
+
+.card.flip{
+transform:rotateY(180deg);
+}
+
+.card.shake{
+animation:shakeAnim 0.4s;
+}
+
+@keyframes shakeAnim{
+0%{transform:translateX(0)}
+20%{transform:translateX(-6px)}
+40%{transform:translateX(6px)}
+60%{transform:translateX(-6px)}
+80%{transform:translateX(6px)}
+100%{transform:translateX(0)}
+}
+
+.roundScreenEnter{
+animation:slideIn 0.4s;
+}
+
+@keyframes slideIn{
+from{transform:translateY(30px);opacity:0}
+ to{transform:translateY(0);opacity:1}
+}
+
+.confettiPiece{
+position:fixed;
+width:10px;
+height:10px;
+top:-10px;
+animation:confettiFall 3s linear forwards;
+}
+
+@keyframes confettiFall{
+0%{transform:translateY(0) rotate(0deg)}
+100%{transform:translateY(100vh) rotate(720deg)}
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="setup" class="screen active">
+<h1>TABU</h1>
+
+<input id="team1" placeholder="Takım 1" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+<input id="team2" placeholder="Takım 2" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+
+<h3>İlk Başlayan</h3>
+<button id="firstBtn1" onclick="firstTeam(0)">TAKIM 1</button>
+<button id="firstBtn2" onclick="firstTeam(1)">TAKIM 2</button>
+
+<h3>Süre</h3>
+<button class="timeBtn" onclick="setTime(this,60)">60</button>
+<button class="timeBtn" onclick="setTime(this,90)">90</button>
+<button class="timeBtn" onclick="setTime(this,120)">120</button>
+
+<h3>Tur</h3>
+<button class="roundBtn" onclick="setRounds(this,5)">5</button>
+<button class="roundBtn" onclick="setRounds(this,10)">10</button>
+<button class="roundBtn" onclick="setRounds(this,20)">20</button>
+
+<br><br>
+<button class="bigButton" onclick="startGame()">OYUNU BAŞLAT</button>
+</div>
+
+<div id="game" class="screen">
+<div class="turnBanner" id="turnText"></div>
+<div class="timer" id="timer">0</div>
+
+<div class="card">
+<div class="word" id="mainWord"></div>
+<div id="tabuWords"></div>
+</div>
+
+<button class="green" onclick="correct()">DOĞRU</button>
+<button class="red" onclick="tabu()">TABU</button>
+<button id="passBtn" class="secondary" onclick="passWord()">PAS</button>
+<button onclick="manualStart()">SÜREYİ BAŞLAT</button>
+
+<div class="scoreBoard" id="score"></div>
+</div>
+
+<div id="roundScore" class="screen">
+<h1>Tur Bitti</h1>
+<div id="roundResult"></div>
+<button onclick="nextRound()">Sonraki Tur</button>
+</div>
+
+<div id="final" class="screen">
+<h1>OYUN BİTTİ</h1>
+<h2 id="winner"></h2>
+<div id="finalScore"></div>
+<br>
+<button class="bigButton" onclick="restart()">YENİ OYUN</button>
+</div>
+
+<script>
+
+let teamNames=["TAKIM 1","TAKIM 2"]
+let scores=[0,0]
+let currentTeam=0
+let round=1
+let totalRounds=2
+let time=60
+let timerInterval=null
+let timeLeft=0
+let passCount=0
+
+let correctCount=0
+let tabuCount=0
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+
+function playBeep(freq,duration){
+const osc=audioCtx.createOscillator()
+const gain=audioCtx.createGain()
+osc.frequency.value=freq
+osc.type="sine"
+osc.connect(gain)
+gain.connect(audioCtx.destination)
+osc.start()
+gain.gain.setValueAtTime(0.2,audioCtx.currentTime)
+osc.stop(audioCtx.currentTime+duration)
+}
+
+function soundTick(){playBeep(900,0.07)}
+
+function soundCorrect(){playBeep(700,0.15)}
+function soundTabu(){playBeep(200,0.25)}
+function soundEnd(){playBeep(120,0.4)}
+
+const team1Input=document.getElementById("team1")
+const team2Input=document.getElementById("team2")
+
+team1Input.addEventListener("input",updateTeamButtons)
+team2Input.addEventListener("input",updateTeamButtons)
+
+function updateTeamButtons(){
+let t1=(team1Input.value||"TAKIM 1").toUpperCase()
+let t2=(team2Input.value||"TAKIM 2").toUpperCase()
+
+document.getElementById("firstBtn1").innerText=t1
+
+document.getElementById("firstBtn2").innerText=t2
+}
+
+let words=[]
+let wordsLoaded=false
+let wordPointer=0
+
+// Türkçe kelimeleri dış dosyadan yükle (GitHub Pages uyumlu)
+fetch("words_tr.json")
+.then(r=>r.json())
+.then(data=>{
+words=data
+wordsLoaded=true
+shuffleWords()
+console.log("Kelime dosyası yüklendi:",words.length)
+})
+.catch(err=>{
+console.error("words_tr.json yüklenemedi",err)
+alert("Kelime dosyası yüklenemedi. Dosyayı GitHub Pages üzerinden çalıştırın veya aynı klasörde olduğundan emin olun.")
+})
+
+
+function shuffleWords(){
+for(let i=words.length-1;i>0;i--){
+const j=Math.floor(Math.random()*(i+1))
+;[words[i],words[j]]=[words[j],words[i]]
+}
+wordPointer=0
+}
+
+function setTime(el,t){
+time=t
+
+document.querySelectorAll(".timeBtn").forEach(b=>b.classList.remove("green"))
+el.classList.add("green")
+}
+
+function setRounds(el,r){
+totalRounds=r
+
+document.querySelectorAll(".roundBtn").forEach(b=>b.classList.remove("green"))
+el.classList.add("green")
+}
+
+function firstTeam(i){
+currentTeam=i
+
+let b1=document.getElementById("firstBtn1")
+let b2=document.getElementById("firstBtn2")
+
+b1.classList.remove("red")
+b2.classList.remove("red")
+
+if(i===0) b1.classList.add("red")
+else b2.classList.add("red")
+}
+
+function startGame(){
+
+if(!wordsLoaded){
+alert("Kelime listesi henüz yüklenmedi. Lütfen birkaç saniye bekleyip tekrar deneyin.")
+return
+}
+
+teamNames[0]=(team1Input.value||"TAKIM 1").toUpperCase()
+teamNames[1]=(team2Input.value||"TAKIM 2").toUpperCase()
+
+showScreen("game")
+startRound()
+}
+
+function startRound(){
+
+const timerEl=document.getElementById("timer")
+const passBtn=document.getElementById("passBtn")
+const turnText=document.getElementById("turnText")
+
+correctCount=0
+tabuCount=0
+passCount=0
+
+passBtn.classList.remove("disabled")
+passBtn.innerText="PAS (3)"
+
+turnText.innerText=teamNames[currentTeam]+" ANLATIYOR"
+
+timeLeft=time
+
+timerEl.innerText=timeLeft
+
+timerEl.classList.remove("blink")
+
+updateScore()
+
+nextWord()
+}
+
+function nextWord(){
+
+if(words.length===0) return
+
+if(wordPointer>=words.length){
+shuffleWords()
+}
+
+let w=words[wordPointer]
+wordPointer++
+
+const card=document.querySelector(".card")
+
+if(card){
+card.classList.add("flip")
+setTimeout(()=>card.classList.remove("flip"),200)
+}
+
+document.getElementById("mainWord").innerText=w.word
+
+let tabuContainer=document.getElementById("tabuWords")
+tabuContainer.innerHTML=""
+
+w.tabu.forEach(t=>{
+let d=document.createElement("div")
+d.className="tabuWord"
+d.innerText=t
+
+tabuContainer.appendChild(d)
+})
+}
+
+function manualStart(){
+if(timerInterval) return
+
+const timerEl=document.getElementById("timer")
+
+timerInterval=setInterval(()=>{
+
+timeLeft--
+
+timerEl.innerText=timeLeft
+
+if(timeLeft<=3){
+soundTick()
+timerEl.classList.add("blink")
+document.body.classList.add("redFlash")
+}else{
+document.body.classList.remove("redFlash")
+}
+
+if(timeLeft<=0){
+clearInterval(timerInterval)
+timerInterval=null
+endRound()
+}
+
+},1000)
+}
+
+function correct(){
+soundCorrect()
+manualStart()
+correctCount++
+updateScore()
+nextWord()
+}
+
+function tabu(){
+soundTabu()
+manualStart()
+tabuCount++
+updateScore()
+nextWord()
+}
+
+function passWord(){
+
+const passBtn=document.getElementById("passBtn")
+
+if(passCount>=3) return
+
+manualStart()
+
+passCount++
+
+let left=3-passCount
+passBtn.innerText="PAS ("+left+")"
+
+if(passCount>=3){
+passBtn.classList.add("disabled")
+}
+
+nextWord()
+}
+
+function updateScore(){
+let s=Math.max(0,correctCount-tabuCount)
+
+let scoreEl=document.getElementById("score")
+
+scoreEl.innerText=teamNames[0]+": "+scores[0]+" | "+teamNames[1]+": "+scores[1]+" | Tur: "+s
+}
+
+function endRound(){
+
+ document.body.classList.remove("redFlash")
+ const timerEl=document.getElementById("timer")
+ if(timerEl) timerEl.classList.remove("blink")
+
+let s=Math.max(0,correctCount-tabuCount)
+
+scores[currentTeam]+=s
+
+document.getElementById("roundResult").innerText=teamNames[currentTeam]+" tur puanı: "+s
+
+const card=document.querySelector(".card")
+
+if(card){
+card.classList.add("shake")
+}
+
+setTimeout(()=>{
+showScreen("roundScore")
+const rs=document.getElementById("roundScore")
+if(rs) rs.classList.add("roundScreenEnter")
+},400)
+
+}
+
+function nextRound(){
+
+round++
+
+if(round>totalRounds*2){
+endGame()
+return
+}
+
+currentTeam=currentTeam===0?1:0
+
+showScreen("game")
+startRound()
+}
+
+function createConfetti(){
+for(let i=0;i<120;i++){
+let c=document.createElement("div")
+c.className="confettiPiece"
+c.style.left=Math.random()*100+"vw"
+c.style.background=`hsl(${Math.random()*360},80%,60%)`
+c.style.animationDelay=(Math.random()*0.5)+"s"
+document.body.appendChild(c)
+setTimeout(()=>c.remove(),3000)
+}
+}
+
+function endGame(){
+
+soundEnd()
+createConfetti()
+
+showScreen("final")
+
+let win
+
+if(scores[0]>scores[1]) win=teamNames[0]
+else if(scores[1]>scores[0]) win=teamNames[1]
+else win="BERABERE"
+
+document.getElementById("winner").innerText="Kazanan Takım: "+win
+
+document.getElementById("finalScore").innerText=
+teamNames[0]+" "+scores[0]+" - "+scores[1]+" "+teamNames[1]
+}
+
+function restart(){
+
+scores=[0,0]
+round=1
+
+showScreen("setup")
+}
+
+function showScreen(id){
+
+document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"))
+
+document.getElementById(id).classList.add("active")
+}
+
+</script>
+
+</body>
+</html>

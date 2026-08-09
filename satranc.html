@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Satranç</title>
+<style>
+  :root{
+    --wood-dark:#6b4423;
+    --wood-mid:#8a5a34;
+    --wood-light:#c89666;
+    --felt-green:#1f3d2e;
+    --cream:#f2e8d5;
+    --gold:#c9a154;
+    --gold-bright:#e8c471;
+    --square-light:#eddcc0;
+    --square-dark:#a3703f;
+    --square-select:#7fb069;
+    --square-check:#c9453f;
+    --ink:#2b1d12;
+    --panel:#2a1d12;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;min-height:100%;
+    background:radial-gradient(ellipse at top, #2f2016 0%, #17110a 70%);
+    font-family:'Georgia', 'Times New Roman', serif;
+    color:var(--cream);
+    display:flex;align-items:flex-start;justify-content:center;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  .app{
+    display:flex;flex-direction:column;align-items:center;gap:12px;
+    padding:18px 14px 30px;width:100%;max-width:640px;
+    margin:0 auto;
+  }
+  h1{
+    font-size:1.7rem;letter-spacing:2px;margin:4px 0 0;
+    color:var(--gold-bright);text-shadow:0 2px 6px rgba(0,0,0,.6);
+    font-variant:small-caps;
+  }
+  .subtitle{font-size:.75rem;color:#c9b48a;letter-spacing:1px;margin-bottom:2px;text-align:center;}
+  .panel{
+    display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center;
+    background:rgba(0,0,0,.25);padding:10px;border-radius:10px;
+    border:1px solid rgba(201,161,84,.25);width:100%;
+  }
+  .field{display:flex;flex-direction:column;gap:3px;font-size:.68rem;color:#c9b48a;letter-spacing:.5px;}
+  select{
+    background:var(--wood-light);color:var(--ink);border:1px solid var(--gold);
+    border-radius:5px;padding:5px 6px;font-family:inherit;font-size:.78rem;font-weight:bold;
+  }
+  .btn{
+    background:linear-gradient(180deg, var(--wood-light), var(--wood-mid));
+    color:var(--ink);border:1px solid var(--gold);padding:7px 12px;border-radius:6px;
+    font-family:inherit;font-size:.78rem;cursor:pointer;font-weight:bold;letter-spacing:.4px;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.4);}
+  .btn.active{background:linear-gradient(180deg, var(--gold-bright), var(--gold));box-shadow:0 0 0 2px rgba(232,196,113,.4) inset;}
+  .mode-row{display:flex;gap:8px;}
+  .chat-panel{
+    display:none;flex-direction:column;gap:6px;width:100%;max-width:520px;
+    background:rgba(0,0,0,.28);border:1px solid rgba(201,161,84,.25);border-radius:10px;padding:8px;
+  }
+  .chat-panel.visible{display:flex;}
+  .chat-log{
+    max-height:130px;min-height:40px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;padding:2px 2px 2px 0;
+  }
+  .chat-msg{
+    font-size:.8rem;line-height:1.3;padding:6px 10px;border-radius:9px;max-width:82%;word-wrap:break-word;
+  }
+  .chat-msg.ai{ background:var(--cream); color:var(--ink); align-self:flex-start; border-bottom-left-radius:2px; }
+  .chat-msg.me{ background:var(--gold); color:var(--ink); align-self:flex-end; border-bottom-right-radius:2px; }
+  .chat-input-row{ display:flex; gap:6px; }
+  .chat-input-row input{
+    flex:1;background:var(--wood-light);color:var(--ink);border:1px solid var(--gold);
+    border-radius:6px;padding:7px 9px;font-family:inherit;font-size:.8rem;
+  }
+  .chat-input-row input::placeholder{ color:#5a3f22; }
+  .board-wrap{
+    background:var(--felt-green);padding:18px;border-radius:8px;
+    box-shadow:0 0 0 6px var(--wood-dark), 0 0 0 10px var(--gold), 0 14px 34px rgba(0,0,0,.55);
+    position:relative;
+  }
+  .board{
+    display:grid;grid-template-columns:repeat(8, 1fr);grid-template-rows:repeat(8, 1fr);
+    width:min(78vw, 460px);height:min(78vw, 460px);border:2px solid var(--wood-dark);
+    transition:transform .35s ease;
+  }
+  .board.rotated{ transform:rotate(180deg); }
+  .sq{
+    position:relative;display:flex;align-items:center;justify-content:center;
+    font-size:min(9.5vw, 48px);cursor:pointer;user-select:none;transition:background .1s ease;
+  }
+  .sq.light{background:var(--square-light);}
+  .sq.dark{background:var(--square-dark);}
+  .sq.selected{background:var(--square-select) !important;}
+  .sq.check{background:var(--square-check) !important;}
+  .sq .dot{position:absolute;width:26%;height:26%;border-radius:50%;background:rgba(30,20,10,.35);pointer-events:none;}
+  .sq .ring{position:absolute;width:88%;height:88%;border-radius:50%;border:4px solid rgba(30,20,10,.35);pointer-events:none;box-sizing:border-box;}
+  .sq .piece{filter:drop-shadow(0 2px 2px rgba(0,0,0,.45));pointer-events:none;line-height:1;}
+  .piece.white{color:#fdf6e8;-webkit-text-stroke:1px #4a3620;}
+  .piece.black{color:#231508;-webkit-text-stroke:1px #0a0603;}
+  .coords{position:absolute;font-size:.6rem;color:rgba(255,255,255,.4);pointer-events:none;}
+  .file-label{bottom:2px;right:4px;}
+  .rank-label{top:2px;left:4px;}
+  .status-bar{
+    display:flex;align-items:center;justify-content:space-between;width:100%;max-width:520px;
+    background:rgba(0,0,0,.3);border:1px solid rgba(201,161,84,.25);border-radius:8px;padding:9px 14px;font-size:.9rem;
+    gap:6px;flex-wrap:wrap;
+  }
+  .side-block{display:flex;align-items:center;gap:8px;}
+  .turn-dot{width:14px;height:14px;border-radius:50%;border:1.5px solid #444;}
+  .turn-dot.white{background:#fdf6e8;}
+  .turn-dot.black{background:#231508;}
+  .clock{
+    font-variant-numeric:tabular-nums;font-weight:bold;background:rgba(0,0,0,.35);
+    padding:3px 9px;border-radius:5px;font-size:.85rem;letter-spacing:.5px;border:1px solid rgba(201,161,84,.3);
+  }
+  .clock.active{border-color:var(--gold-bright);color:var(--gold-bright);}
+  .clock.low{color:#e85c4a;border-color:#e85c4a;}
+  .captured{display:flex;gap:1px;font-size:1rem;min-height:1.3rem;flex-wrap:wrap;max-width:150px;}
+  .promo-modal, .end-banner{
+    position:fixed;inset:0;background:rgba(0,0,0,.68);display:flex;align-items:center;justify-content:center;z-index:50;
+  }
+  .promo-box, .end-box{
+    background:var(--panel);border:2px solid var(--gold);border-radius:10px;padding:20px 22px;
+    text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.6);
+  }
+  .promo-box p{margin:0 0 6px;color:var(--gold-bright);font-size:.9rem;}
+  .promo-choices{display:flex;gap:8px;}
+  .promo-choices button{font-size:2.1rem;background:var(--square-light);border:2px solid var(--gold);border-radius:8px;width:54px;height:54px;cursor:pointer;}
+  .end-box h2{color:var(--gold-bright);margin:0 0 8px;font-size:1.4rem;}
+  .end-box p{color:var(--cream);margin:0 0 16px;font-size:.9rem;}
+  .footer-note{font-size:.7rem;color:#a5906b;text-align:center;max-width:420px;line-height:1.5;}
+
+  /* ===== RESPONSIVE ===== */
+
+  /* Larger screens: give the board (and matching bars) more room */
+  @media (min-width:600px){
+    .app{max-width:700px;}
+    .board{width:min(58vw, 520px);height:min(58vw, 520px);}
+    .board-wrap{padding:22px;}
+  }
+
+  /* Small phones: tighten spacing, let the board use more of the width */
+  @media (max-width:480px){
+    h1{font-size:1.3rem;}
+    .subtitle{font-size:.68rem;}
+    .app{padding:12px 8px 22px;gap:9px;}
+    .panel{padding:8px;gap:8px;}
+    .field{font-size:.62rem;}
+    select{font-size:.72rem;padding:5px;}
+    .btn{padding:6px 10px;font-size:.72rem;}
+    .board-wrap{padding:10px;}
+    .board{width:min(90vw, 460px);height:min(90vw, 460px);}
+    .sq{font-size:min(10.5vw, 48px);}
+    .status-bar{padding:7px 9px;font-size:.78rem;}
+    .clock{font-size:.75rem;padding:3px 7px;}
+    .captured{max-width:110px;font-size:.85rem;}
+    .chat-log{max-height:100px;}
+    .chat-msg{font-size:.75rem;padding:5px 8px;}
+    .chat-input-row input{font-size:.75rem;padding:6px 8px;}
+    .footer-note{font-size:.64rem;padding:0 4px;}
+    .promo-box, .end-box{padding:16px 16px;}
+    .promo-choices button{width:46px;height:46px;font-size:1.8rem;}
+  }
+
+  /* Very narrow phones (e.g. older/small devices) */
+  @media (max-width:360px){
+    .mode-row{flex-direction:column;width:100%;}
+    .mode-row .btn{width:100%;}
+    .panel{flex-direction:column;align-items:stretch;}
+    .field{width:100%;}
+    select{width:100%;}
+  }
+
+  /* Short / landscape screens: avoid vertical overflow fights */
+  @media (max-height:640px) and (orientation:landscape){
+    .app{gap:7px;padding:10px 10px 16px;}
+    .board{width:min(38vh, 380px);height:min(38vh, 380px);}
+    .board-wrap{padding:10px;}
+    .chat-log{max-height:70px;}
+    .subtitle{display:none;}
+    .footer-note{display:none;}
+  }
+
+  /* Respect reduced-motion preferences */
+  @media (prefers-reduced-motion: reduce){
+    .board{transition:none;}
+    .btn{transition:none;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>♔ Satranç ♛</h1>
+  <div class="subtitle">Renk, süre ve zorluk seç — konuşan bir rakiple oyna</div>
+
+  <div class="panel">
+    <div class="mode-row">
+      <button class="btn active" id="mode-ai" onclick="setMode('ai')">Bilgisayara Karşı</button>
+      <button class="btn" id="mode-2p" onclick="setMode('2p')">İki Kişilik</button>
+    </div>
+  </div>
+
+  <div class="panel" id="setup-panel">
+    <div class="field" id="color-field">
+      <label>Renginiz</label>
+      <select id="color-select">
+        <option value="white">Beyaz</option>
+        <option value="black">Siyah</option>
+        <option value="random" selected>Rastgele</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Süre</label>
+      <select id="time-select">
+        <option value="5+2">5+2</option>
+        <option value="7+5">7+5</option>
+        <option value="9+2" selected>9+2</option>
+        <option value="10+5">10+5</option>
+        <option value="15+10">15+10</option>
+        <option value="30+20">30+20</option>
+        <option value="unlimited">Sınırsız</option>
+      </select>
+    </div>
+    <div class="field" id="diff-field">
+      <label>Zorluk (Elo)</label>
+      <select id="diff-select">
+        <option value="400">400</option>
+        <option value="500">500</option>
+        <option value="600">600</option>
+        <option value="700">700</option>
+        <option value="800" selected>800</option>
+        <option value="900">900</option>
+        <option value="1000">1000</option>
+        <option value="1100">1100</option>
+        <option value="1200">1200</option>
+        <option value="1300">1300</option>
+        <option value="1400">1400</option>
+        <option value="1500">1500</option>
+        <option value="1600">1600</option>
+        <option value="1700">1700</option>
+        <option value="1800">1800</option>
+      </select>
+    </div>
+    <button class="btn" onclick="startNewGame()">Yeni Oyun</button>
+    <button class="btn" onclick="undoMove()">Geri Al</button>
+  </div>
+
+  <div class="chat-panel" id="chat-panel">
+    <div class="chat-log" id="chat-log"></div>
+    <div class="chat-input-row">
+      <input type="text" id="chat-input" placeholder="Rakibe bir şey yaz..." maxlength="140" onkeydown="if(event.key==='Enter') sendChatMessage();">
+      <button class="btn" onclick="sendChatMessage()">Gönder</button>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div class="side-block">
+      <div class="turn-dot" id="dot-top"></div>
+      <span id="label-top">Siyah</span>
+    </div>
+    <div class="clock" id="clock-top">--:--</div>
+    <div class="captured" id="captured-top"></div>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="status-bar">
+    <div class="side-block">
+      <div class="turn-dot" id="dot-bottom"></div>
+      <span id="label-bottom">Beyaz</span>
+    </div>
+    <div class="clock" id="clock-bottom">--:--</div>
+    <div class="captured" id="captured-bottom"></div>
+  </div>
+
+  <div class="footer-note" id="hint-text">Bir taş seçerek başlayın. Vazgeçmek için aynı taşa ya da boş bir kareye dokunun.</div>
+</div>
+
+<script>
+/* ============ CONSTANTS ============ */
+const PIECES = {
+  P:{white:'♙', black:'♟'}, N:{white:'♘', black:'♞'}, B:{white:'♗', black:'♝'},
+  R:{white:'♖', black:'♜'}, Q:{white:'♕', black:'♛'}, K:{white:'♔', black:'♚'}
+};
+const PIECE_VALUE = {P:1,N:3,B:3,R:5,Q:9,K:0};
+const PIECE_NAME_TR = {P:'piyon', N:'at', B:'fil', R:'kale', Q:'vezir', K:'şah'};
+
+/* ============ ENGINE STATE ============ */
+let board, turn, castling, enPassant, moveHistory, gameMode, selected, legalMovesForSelected, gameOver;
+let playerColor, aiColor, aiRating, timeControl, clocks, clockInterval, commentBaseline, capturedPieces;
+
+function isWhite(p){ return p && p === p.toUpperCase(); }
+function isBlack(p){ return p && p === p.toLowerCase(); }
+function colorOf(p){ if(!p) return null; return isWhite(p) ? 'white' : 'black'; }
+function inBounds(r,c){ return r>=0 && r<8 && c>=0 && c<8; }
+function cloneBoard(b){ return b.map(row=>row.slice()); }
+
+function initBoardState(){
+  board = [
+    ['r','n','b','q','k','b','n','r'],
+    ['p','p','p','p','p','p','p','p'],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    ['P','P','P','P','P','P','P','P'],
+    ['R','N','B','Q','K','B','N','R']
+  ];
+  turn = 'white';
+  castling = {wK:true, wQ:true, bK:true, bQ:true};
+  enPassant = null;
+  moveHistory = [];
+  selected = null;
+  legalMovesForSelected = [];
+  gameOver = false;
+  capturedPieces = {white:[], black:[]};
+}
+
+function findKing(b, color){
+  const target = color==='white' ? 'K' : 'k';
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++) if(b[r][c]===target) return {r,c};
+  return null;
+}
+
+function pseudoMoves(b, r, c, castlingState, epState){
+  const p = b[r][c];
+  if(!p) return [];
+  const color = colorOf(p);
+  const type = p.toUpperCase();
+  const moves = [];
+  const dir = color==='white' ? -1 : 1;
+
+  const addIfValid=(nr,nc)=>{
+    if(!inBounds(nr,nc)) return false;
+    const target = b[nr][nc];
+    if(target===null){ moves.push({r:nr,c:nc}); return true; }
+    else { if(colorOf(target)!==color) moves.push({r:nr,c:nc,capture:true}); return false; }
+  };
+
+  if(type==='P'){
+    const startRow = color==='white'?6:1;
+    const promoRow = color==='white'?0:7;
+    if(inBounds(r+dir,c) && b[r+dir][c]===null){
+      moves.push({r:r+dir,c:c,promo:(r+dir===promoRow)});
+      if(r===startRow && b[r+2*dir][c]===null) moves.push({r:r+2*dir,c:c,doubleStep:true});
+    }
+    for(const dc of [-1,1]){
+      const nr=r+dir, nc=c+dc;
+      if(inBounds(nr,nc)){
+        const target=b[nr][nc];
+        if(target && colorOf(target)!==color) moves.push({r:nr,c:nc,capture:true,promo:(nr===promoRow)});
+        else if(epState && epState.r===nr && epState.c===nc) moves.push({r:nr,c:nc,capture:true,enPassantCapture:true});
+      }
+    }
+  } else if(type==='N'){
+    const deltas=[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+    for(const [dr,dc] of deltas) addIfValid(r+dr,c+dc);
+  } else if(type==='K'){
+    for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){ if(dr===0&&dc===0) continue; addIfValid(r+dr,c+dc); }
+    if(castlingState){
+      const row = color==='white'?7:0;
+      if(r===row && c===4){
+        const kSideFlag = color==='white'?'wK':'bK';
+        const qSideFlag = color==='white'?'wQ':'bQ';
+        if(castlingState[kSideFlag] && b[row][5]===null && b[row][6]===null && b[row][7]===(color==='white'?'R':'r')) moves.push({r:row,c:6,castle:'K'});
+        if(castlingState[qSideFlag] && b[row][1]===null && b[row][2]===null && b[row][3]===null && b[row][0]===(color==='white'?'R':'r')) moves.push({r:row,c:2,castle:'Q'});
+      }
+    }
+  } else {
+    let dirs=[];
+    if(type==='B') dirs=[[-1,-1],[-1,1],[1,-1],[1,1]];
+    else if(type==='R') dirs=[[-1,0],[1,0],[0,-1],[0,1]];
+    else if(type==='Q') dirs=[[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]];
+    for(const [dr,dc] of dirs){
+      let nr=r+dr, nc=c+dc;
+      while(inBounds(nr,nc)){ const cont = addIfValid(nr,nc); if(!cont) break; nr+=dr; nc+=dc; }
+    }
+  }
+  return moves;
+}
+
+function isSquareAttacked(b, r, c, byColor){
+  for(let rr=0;rr<8;rr++){
+    for(let cc=0;cc<8;cc++){
+      const p = b[rr][cc];
+      if(p && colorOf(p)===byColor){
+        if(p.toUpperCase()==='P'){
+          const dir = byColor==='white'?-1:1;
+          if(rr+dir===r && (cc-1===c || cc+1===c)) return true;
+          continue;
+        }
+        const moves = pseudoMoves(b, rr, cc, null, null);
+        for(const m of moves) if(m.r===r && m.c===c) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function isInCheck(b, color){
+  const k = findKing(b, color);
+  if(!k) return false;
+  return isSquareAttacked(b, k.r, k.c, color==='white'?'black':'white');
+}
+
+function applyMoveToBoard(b, from, to, move){
+  const nb = cloneBoard(b);
+  const piece = nb[from.r][from.c];
+  const color = colorOf(piece);
+  let captured = nb[to.r][to.c];
+  if(move.enPassantCapture){
+    const capRow = color==='white'? to.r+1 : to.r-1;
+    captured = nb[capRow][to.c];
+    nb[capRow][to.c] = null;
+  }
+  nb[to.r][to.c] = piece;
+  nb[from.r][from.c] = null;
+  if(move.promo){
+    const promoPiece = move.promoteTo || 'Q';
+    nb[to.r][to.c] = color==='white' ? promoPiece.toUpperCase() : promoPiece.toLowerCase();
+  }
+  if(move.castle==='K'){ const row = color==='white'?7:0; nb[row][5]=nb[row][7]; nb[row][7]=null; }
+  else if(move.castle==='Q'){ const row = color==='white'?7:0; nb[row][3]=nb[row][0]; nb[row][0]=null; }
+  return {nb, captured};
+}
+
+function getLegalMoves(b, r, c, castlingState, epState){
+  const piece = b[r][c];
+  if(!piece) return [];
+  const color = colorOf(piece);
+  const pseudo = pseudoMoves(b, r, c, castlingState, epState);
+  const legal = [];
+  for(const m of pseudo){
+    if(m.castle){
+      const row = r;
+      const opp = color==='white'?'black':'white';
+      if(isSquareAttacked(b,row,4,opp)) continue;
+      const passCol = m.castle==='K'?5:3;
+      if(isSquareAttacked(b,row,passCol,opp)) continue;
+      if(isSquareAttacked(b,row,m.c,opp)) continue;
+    }
+    const {nb} = applyMoveToBoard(b, {r,c}, {r:m.r,c:m.c}, m);
+    if(!isInCheck(nb, color)) legal.push(m);
+  }
+  return legal;
+}
+
+function getAllLegalMoves(b, color, castlingState, epState){
+  const all = [];
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const p = b[r][c];
+    if(p && colorOf(p)===color){
+      const moves = getLegalMoves(b,r,c,castlingState,epState);
+      for(const m of moves) all.push({from:{r,c}, to:{r:m.r,c:m.c}, move:m});
+    }
+  }
+  return all;
+}
+
+function updateCastlingRights(from, piece){
+  if(piece==='K'){ castling.wK=false; castling.wQ=false; }
+  if(piece==='k'){ castling.bK=false; castling.bQ=false; }
+  if(piece==='R'){ if(from.r===7 && from.c===0) castling.wQ=false; if(from.r===7 && from.c===7) castling.wK=false; }
+  if(piece==='r'){ if(from.r===0 && from.c===0) castling.bQ=false; if(from.r===0 && from.c===7) castling.bK=false; }
+}
+
+function recordCapture(piece){
+  if(isWhite(piece)) capturedPieces.black.push(piece);
+  else capturedPieces.white.push(piece);
+}
+
+function makeMove(from, to, move, promoteTo){
+  const piece = board[from.r][from.c];
+  const moverColor = colorOf(piece);
+  if(move.promo) move.promoteTo = promoteTo || 'Q';
+
+  moveHistory.push({
+    board: cloneBoard(board), castling: {...castling},
+    enPassant: enPassant ? {...enPassant} : null, turn,
+    clocks: clocks ? {...clocks} : null
+  });
+
+  const {nb, captured} = applyMoveToBoard(board, from, to, move);
+  board = nb;
+  updateCastlingRights(from, piece);
+  enPassant = move.doubleStep ? {r:(from.r+to.r)/2, c:from.c} : null;
+  turn = turn==='white' ? 'black' : 'white';
+  if(captured) recordCapture(captured);
+
+  if(timeControl && timeControl.base!==null && clocks){
+    clocks[moverColor] += timeControl.inc;
+  }
+
+  return captured;
+}
+
+function undoMove(){
+  if(moveHistory.length===0 || gameOver) return;
+  const last = moveHistory.pop();
+  board = last.board; castling = last.castling; enPassant = last.enPassant; turn = last.turn;
+  if(last.clocks) clocks = last.clocks;
+  selected = null; legalMovesForSelected = [];
+  gameOver = false;
+  recalcCaptured();
+  hideEndBanner();
+  hideBubble();
+  render();
+}
+
+function recalcCaptured(){
+  const fullSet = {P:8,N:2,B:2,R:2,Q:1,K:1};
+  const whiteOnBoard = {P:0,N:0,B:0,R:0,Q:0,K:0}, blackOnBoard = {P:0,N:0,B:0,R:0,Q:0,K:0};
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const p = board[r][c];
+    if(p){ const t=p.toUpperCase(); if(isWhite(p)) whiteOnBoard[t]++; else blackOnBoard[t]++; }
+  }
+  capturedPieces = {white:[], black:[]};
+  for(const t of ['P','N','B','R','Q']){
+    const missingWhite = fullSet[t]-whiteOnBoard[t], missingBlack = fullSet[t]-blackOnBoard[t];
+    for(let i=0;i<missingWhite;i++) capturedPieces.black.push(t);
+    for(let i=0;i<missingBlack;i++) capturedPieces.white.push(t.toLowerCase());
+  }
+}
+
+/* ============ AI ENGINE ============ */
+function evaluateBoard(b){
+  let score = 0;
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const p = b[r][c];
+    if(p){
+      const val = PIECE_VALUE[p.toUpperCase()];
+      score += isWhite(p) ? val : -val;
+      const centerBonus = (r>=2&&r<=5&&c>=2&&c<=5) ? 0.1 : 0;
+      score += isWhite(p) ? centerBonus : -centerBonus;
+    }
+  }
+  return score;
+}
+
+function minimax(b, depth, alpha, beta, maximizing, castlingState, epState){
+  if(depth===0) return evaluateBoard(b);
+  const color = maximizing ? 'white':'black';
+  const moves = getAllLegalMoves(b, color, castlingState, epState);
+  if(moves.length===0){
+    if(isInCheck(b,color)) return maximizing ? -9999 : 9999;
+    return 0;
+  }
+  if(maximizing){
+    let maxEval = -Infinity;
+    for(const mv of moves){
+      const {nb} = applyMoveToBoard(b, mv.from, mv.to, mv.move);
+      const newEp = mv.move.doubleStep ? {r:(mv.from.r+mv.to.r)/2, c:mv.from.c} : null;
+      const ev = minimax(nb, depth-1, alpha, beta, false, castlingState, newEp);
+      maxEval = Math.max(maxEval, ev); alpha = Math.max(alpha, ev);
+      if(beta<=alpha) break;
+    }
+    return maxEval;
+  } else {
+    let minEval = Infinity;
+    for(const mv of moves){
+      const {nb} = applyMoveToBoard(b, mv.from, mv.to, mv.move);
+      const newEp = mv.move.doubleStep ? {r:(mv.from.r+mv.to.r)/2, c:mv.from.c} : null;
+      const ev = minimax(nb, depth-1, alpha, beta, true, castlingState, newEp);
+      minEval = Math.min(minEval, ev); beta = Math.min(beta, ev);
+      if(beta<=alpha) break;
+    }
+    return minEval;
+  }
+}
+
+function getAIParams(rating){
+  // depth 0 = only evaluates its own move, never "sees" the opponent's reply (very blunder-prone).
+  // depth 1 = sees one opponent reply. depth 2-3 = sees deeper tactics.
+  // blunderChance = probability of playing a fully random legal move instead of the "best" one found.
+  // noise = random pawns added/subtracted to each candidate's score, so even the "best" pick is shaky at low levels.
+  if(rating <= 500)  return {depth:0, blunderChance:0.55, noise:4.5};
+  if(rating <= 700)  return {depth:0, blunderChance:0.38, noise:3.2};
+  if(rating <= 900)  return {depth:1, blunderChance:0.24, noise:2.3};
+  if(rating <= 1100) return {depth:1, blunderChance:0.14, noise:1.6};
+  if(rating <= 1300) return {depth:2, blunderChance:0.08, noise:1.0};
+  if(rating <= 1500) return {depth:2, blunderChance:0.03, noise:0.5};
+  if(rating <= 1700) return {depth:3, blunderChance:0.01, noise:0.2};
+  return {depth:3, blunderChance:0.003, noise:0.08};
+}
+
+function aiMove(){
+  const moves = getAllLegalMoves(board, aiColor, castling, enPassant);
+  if(moves.length===0) return;
+  const {depth, blunderChance, noise} = getAIParams(aiRating);
+  const maximizing = aiColor==='white';
+
+  let chosen;
+  if(Math.random() < blunderChance){
+    chosen = moves[Math.floor(Math.random()*moves.length)];
+  } else {
+    let bestScore = maximizing ? -Infinity : Infinity;
+    let best = [];
+    for(const mv of moves){
+      const {nb} = applyMoveToBoard(board, mv.from, mv.to, mv.move);
+      const newEp = mv.move.doubleStep ? {r:(mv.from.r+mv.to.r)/2, c:mv.from.c} : null;
+      let score = minimax(nb, depth, -Infinity, Infinity, !maximizing, castling, newEp);
+      score += (Math.random()*2-1)*noise;
+      if(maximizing ? score > bestScore : score < bestScore){ bestScore = score; best = [mv]; }
+      else if(Math.abs(score-bestScore)<0.001){ best.push(mv); }
+    }
+    chosen = best[Math.floor(Math.random()*best.length)] || moves[0];
+  }
+
+  const promoteTo = chosen.move.promo ? 'Q' : undefined;
+  const capturedByAI = makeMove(chosen.from, chosen.to, chosen.move, promoteTo);
+  maybeIdleCommentAfterAI();
+  afterMove();
+}
+
+/* ============ COMMENTARY ============ */
+const REGRET_PHRASES = [
+  "Ahh, {piece}imi orada tehlikede bırakmışım!",
+  "Keşke {piece}imi oraya koymasaydım.",
+  "Çatalı görmedim, {piece}imi kaybettim.",
+  "Hata yaptım, {piece}im gitti.",
+  "Bunu hesaba katmamıştım, {piece}im elden gitti."
+];
+const PRAISE_PHRASES = [
+  "Çok iyi hamle!",
+  "Bunu beklemiyordum, güzel oynadın.",
+  "Hmm, güçlü bir pozisyon kurdun.",
+  "Bu hamle canımı yaktı.",
+  "Etkileyici, gerçekten iyi gördün."
+];
+const CHECK_PHRASES = [
+  "Şah! Dikkatli olmalıyım.",
+  "İyi baskı kurdun, düşünmem lazım.",
+  "Şah çektin, toparlanmam gerek."
+];
+const IDLE_PHRASES = [
+  "Hmm, düşünmem lazım.",
+  "İlginç bir hamle.",
+  "Bakalım bu nasıl gelişecek.",
+  "Bu pozisyonu seviyorum.",
+  "Dikkatli oynamalıyım."
+];
+const AI_IDLE_SELF = [
+  "Bu hamleyi deneyeyim.",
+  "Sanırım bu iyi bir plan.",
+  "Merkezi kontrol etmeliyim."
+];
+
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function appendChatMessage(sender, text){
+  const log = document.getElementById('chat-log');
+  if(!log) return;
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + sender;
+  div.textContent = text;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function showBubble(text){
+  appendChatMessage('ai', text);
+}
+function hideBubble(){
+  const log = document.getElementById('chat-log');
+  if(log) log.innerHTML = '';
+}
+
+/* ---- player -> AI chat ---- */
+const CHAT_RULES = [
+  { kws:['merhaba','selam','naber','nasılsın','iyi misin'],
+    replies:['Selam! Bugün form tutmuş hissediyorum, hazır ol.','Merhaba! Keyifli bir parti olacak gibi.','Naber! Hamleni bekliyorum.'] },
+  { kws:['zorluk','seviye','kaç puan','elo','kaç elo','ne kadar güçlü'],
+    replies:(()=>null) }, // handled specially below
+  { kws:['kötüsün','berbatsın','aptal','salak','rezil','çok kötü oynuyorsun'],
+    replies:['Ayy, kırıldım biraz ama pes etmiyorum!','Öyle mi düşünüyorsun? Görelim bakalım.','Sert konuşuyorsun, hamlelerinle göster o zaman 😄'] },
+  { kws:['iyisin','harikasın','güzel oynuyorsun','çok iyisin','müthişsin'],
+    replies:['Teşekkürler, sen de fena değilsin!','Ne tatlısın, biraz da sen övün kendini.','Bu sözler moralimi yükseltti, devam edelim.'] },
+  { kws:['ipucu','yardım et','hangi hamle','ne oynamalıyım','öner'],
+    replies:['Kendi rakibime ipucu versem olmaz ama... merkezi kontrol etmeyi dene 😉','Hmm, o kadar da kolay olmasın, kendin bul!','Taşlarını geliştir, roka yapmayı unutma.'] },
+  { kws:['berabere','beraberlik','draw','anlaşalım mı'],
+    replies:['Henüz pes etmeye hazır değilim, biraz daha oynayalım.','Beraberlik mi? Daha kazanma umudum var!','Şimdilik hayır, ama pozisyon değişirse konuşuruz.'] },
+  { kws:['pes ettim','kazandın','tebrikler','sen kazandın'],
+    replies:['Güzel oyundu! Tekrar ister misin?','Teşekkürler, keyifli bir parti oldu.','Bir tane daha oynayalım mı?'] },
+  { kws:['adın ne','kimsin','ismin ne'],
+    replies:['Benim özel bir ismim yok, sadece senin satranç rakibinim. İstersen bana bir isim koy!','Ben sadece bu tahtanın diğer tarafındaki oyuncuyum 🙂'] },
+  { kws:['hile','hile mi yapıyorsun','kopya'],
+    replies:['Hayır, sadece dikkatli oynuyorum!','Hile yok, sadece iyi bir hamle buldum.'] },
+  { kws:['şah','mat','check'],
+    replies:['Şahı gördüm, panik yok.','Dikkatli olmalıyım şimdi.'] }
+];
+const CHAT_FALLBACK = [
+  'Hmm, ilginç bir şey söyledin.',
+  'Oyuna odaklanalım mı? 😄',
+  'Bunu düşüneceğim, şimdi sıra hamlede.',
+  'Anlıyorum, ama tahtaya bakmam lazım.',
+  'İlginç... bakalım hamlende ne yapacaksın.'
+];
+
+function generateChatReply(userText){
+  const t = userText.toLowerCase('tr');
+  if(t.includes('zorlu') || t.includes('seviye') || t.includes('kaç puan') || t.includes('elo') || t.includes('güçlü') || t.includes('ne kadar iyi')){
+    return `Şu an ${aiRating} Elo seviyesinde oynuyorum. ${aiRating<800 ? 'Henüz çok yeniyim, bana şans ver!' : aiRating<1300 ? 'Fena sayılmam ama sen de iddialısın.' : 'Ciddi bir rakip olduğumu göreceksin.'}`;
+  }
+  for(const rule of CHAT_RULES){
+    if(typeof rule.replies!=='function' && rule.kws.some(k=>t.includes(k))){
+      return pick(rule.replies);
+    }
+  }
+  return pick(CHAT_FALLBACK);
+}
+
+function sendChatMessage(){
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if(!text) return;
+  appendChatMessage('me', text);
+  input.value = '';
+  if(gameMode!=='ai') return;
+  setTimeout(()=>{
+    appendChatMessage('ai', generateChatReply(text));
+  }, 350 + Math.random()*400);
+}
+
+function generatePlayerMoveCommentary(capturedByPlayer, wasCheckOnAI){
+  if(gameMode!=='ai') return;
+  const newEval = evaluateBoard(board);
+  const diff = aiColor==='white' ? (commentBaseline - newEval) : (newEval - commentBaseline); // positive = good for player
+  let msg = null;
+
+  if(capturedByPlayer && PIECE_VALUE[capturedByPlayer.toUpperCase()] >= 3 && diff > 1.5){
+    const pieceName = PIECE_NAME_TR[capturedByPlayer.toUpperCase()];
+    msg = pick(PRAISE_PHRASES) + " " + pick(REGRET_PHRASES).replace('{piece}', pieceName);
+  } else if(capturedByPlayer && diff > 0.5){
+    msg = pick(PRAISE_PHRASES);
+  } else if(wasCheckOnAI){
+    msg = pick(CHECK_PHRASES);
+  } else if(diff > 1.2){
+    msg = pick(PRAISE_PHRASES);
+  } else if(Math.random() < 0.18){
+    msg = pick(IDLE_PHRASES);
+  }
+
+  if(msg) showBubble(msg);
+  commentBaseline = newEval;
+}
+
+function maybeIdleCommentAfterAI(){
+  if(gameMode!=='ai') return;
+  commentBaseline = evaluateBoard(board);
+  if(Math.random() < 0.12) showBubble(pick(AI_IDLE_SELF));
+}
+
+/* ============ CLOCK ============ */
+function parseTimeControl(val){
+  if(val==='unlimited') return {base:null, inc:0, label:'Sınırsız'};
+  const [m,s] = val.split('+').map(Number);
+  return {base:m*60, inc:s, label:val};
+}
+
+function formatClock(sec){
+  if(sec===null || sec===undefined) return '∞';
+  sec = Math.max(0, Math.round(sec));
+  const m = Math.floor(sec/60), s = sec%60;
+  return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+
+function startClockInterval(){
+  stopClockInterval();
+  if(!timeControl || timeControl.base===null) return;
+  clockInterval = setInterval(()=>{
+    if(gameOver) { stopClockInterval(); return; }
+    clocks[turn] -= 1;
+    if(clocks[turn] <= 0){
+      clocks[turn] = 0;
+      gameOver = true;
+      stopClockInterval();
+      const winner = turn==='white' ? 'Siyah' : 'Beyaz';
+      showEndBanner('Süre Bitti!', winner + ' kazandı.');
+    }
+    renderClocks();
+  }, 1000);
+}
+function stopClockInterval(){ if(clockInterval){ clearInterval(clockInterval); clockInterval=null; } }
+
+/* ============ ORIENTATION HELPERS ============ */
+function isFlipped(){
+  return gameMode==='ai' && playerColor==='black';
+}
+
+/* ============ UI ============ */
+function setMode(mode){
+  gameMode = mode;
+  document.getElementById('mode-ai').classList.toggle('active', mode==='ai');
+  document.getElementById('mode-2p').classList.toggle('active', mode==='2p');
+  document.getElementById('color-field').style.display = mode==='ai' ? 'flex':'none';
+  document.getElementById('diff-field').style.display = mode==='ai' ? 'flex':'none';
+  document.getElementById('chat-panel').classList.toggle('visible', mode==='ai');
+  startNewGame();
+}
+
+function startNewGame(){
+  initBoardState();
+  hideEndBanner();
+  hideBubble();
+
+  const colorSel = document.getElementById('color-select').value;
+  if(gameMode==='ai'){
+    playerColor = colorSel==='random' ? (Math.random()<0.5?'white':'black') : colorSel;
+    aiColor = playerColor==='white' ? 'black' : 'white';
+    aiRating = parseInt(document.getElementById('diff-select').value, 10);
+  } else {
+    playerColor = 'white'; aiColor = null;
+  }
+
+  timeControl = parseTimeControl(document.getElementById('time-select').value);
+  if(timeControl.base!==null){
+    clocks = {white: timeControl.base, black: timeControl.base};
+  } else {
+    clocks = {white:null, black:null};
+  }
+
+  commentBaseline = evaluateBoard(board);
+  render();
+  startClockInterval();
+
+  if(gameMode==='ai'){
+    document.getElementById('chat-panel').classList.add('visible');
+    setTimeout(()=>{
+      appendChatMessage('ai', `Merhaba! ${aiRating} Elo seviyesinde oynuyorum. ${playerColor==='white' ? 'Beyazsın, ilk hamle sende.' : 'Siyahsın, ben başlıyorum.'} İyi eğlenceler!`);
+    }, 300);
+  }
+
+  if(gameMode==='ai' && turn===aiColor){
+    setTimeout(()=>{ aiMove(); }, 700);
+  }
+}
+
+function squareEl(r,c){ return document.querySelector(`.sq[data-r="${r}"][data-c="${c}"]`); }
+
+function render(){
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+  const kingInCheckColor = isInCheck(board,'white') ? 'white' : (isInCheck(board,'black') ? 'black' : null);
+  const kingPos = kingInCheckColor ? findKing(board, kingInCheckColor) : null;
+  const flipped = isFlipped();
+  // In 2-player mode, rotate the whole board 180deg on black's turn so pieces stay
+  // in their real squares but face whoever is currently moving.
+  const rotate2p = (gameMode==='2p' && turn==='black');
+  boardEl.classList.toggle('rotated', rotate2p);
+  const counterTransform = rotate2p ? 'rotate(180deg)' : '';
+
+  for(let displayRow=0; displayRow<8; displayRow++){
+    for(let displayCol=0; displayCol<8; displayCol++){
+      const r = flipped ? 7-displayRow : displayRow;
+      const c = flipped ? 7-displayCol : displayCol;
+
+      const sq = document.createElement('div');
+      sq.className = 'sq ' + (((r+c)%2===0) ? 'light':'dark');
+      sq.dataset.r = r; sq.dataset.c = c;
+
+      if(kingPos && kingPos.r===r && kingPos.c===c) sq.classList.add('check');
+      if(selected && selected.r===r && selected.c===c) sq.classList.add('selected');
+
+      const piece = board[r][c];
+      if(piece){
+        const span = document.createElement('span');
+        span.className = 'piece ' + (isWhite(piece)?'white':'black');
+        span.textContent = PIECES[piece.toUpperCase()][isWhite(piece)?'white':'black'];
+        if(counterTransform) span.style.transform = counterTransform;
+        sq.appendChild(span);
+      }
+
+      const moveHere = legalMovesForSelected.find(m=>m.r===r && m.c===c);
+      if(moveHere){
+        const marker = document.createElement('div');
+        marker.className = (moveHere.capture || moveHere.enPassantCapture) ? 'ring' : 'dot';
+        sq.appendChild(marker);
+      }
+
+      if(displayCol===0){
+        const lab = document.createElement('div'); lab.className='coords rank-label';
+        lab.textContent = 8-r;
+        if(counterTransform) lab.style.transform = counterTransform;
+        sq.appendChild(lab);
+      }
+      if(displayRow===7){
+        const lab = document.createElement('div'); lab.className='coords file-label';
+        lab.textContent = 'abcdefgh'[c];
+        if(counterTransform) lab.style.transform = counterTransform;
+        sq.appendChild(lab);
+      }
+
+      sq.addEventListener('click', ()=>onSquareClick(r,c));
+      boardEl.appendChild(sq);
+    }
+  }
+
+  // status bar labels: in 2p mode with rotation, "top" bar visually corresponds to
+  // whichever color is NOT on move (since the board rotates, top/bottom stay fixed
+  // in the DOM but represent the far/near side from the current mover's viewpoint)
+  const topColor = flipped ? 'white' : 'black';
+  const bottomColor = flipped ? 'black' : 'white';
+  document.getElementById('dot-top').className = 'turn-dot ' + topColor;
+  document.getElementById('dot-bottom').className = 'turn-dot ' + bottomColor;
+  document.getElementById('label-top').textContent = topColor==='white' ? 'Beyaz' : 'Siyah';
+  document.getElementById('label-bottom').textContent = bottomColor==='white' ? 'Beyaz' : 'Siyah';
+
+  renderCaptured(topColor, bottomColor);
+  renderClocks();
+
+  const hint = document.getElementById('hint-text');
+  if(gameOver) hint.textContent = 'Oyun bitti';
+  else if(gameMode==='ai' && turn===aiColor) hint.textContent = 'Bilgisayar düşünüyor...';
+  else hint.textContent = selected ? 'Hedef kareyi seçin (vazgeçmek için aynı taşa veya boş kareye dokunun)' : 'Bir taş seçerek başlayın';
+}
+
+function renderCaptured(topColor, bottomColor){
+  const topEl = document.getElementById('captured-top');
+  const bottomEl = document.getElementById('captured-bottom');
+  // captured.white = pieces captured BY white (i.e. black pieces taken); show near the side that captured
+  const renderList = (arr)=>arr.map(p=>`<span>${PIECES[p.toUpperCase()][isWhite(p)?'white':'black']}</span>`).join('');
+  topEl.innerHTML = renderList(topColor==='white' ? capturedPieces.white : capturedPieces.black);
+  bottomEl.innerHTML = renderList(bottomColor==='white' ? capturedPieces.white : capturedPieces.black);
+}
+
+function renderClocks(){
+  const flipped = isFlipped();
+  const topColor = flipped ? 'white' : 'black';
+  const bottomColor = flipped ? 'black' : 'white';
+  const topEl = document.getElementById('clock-top');
+  const bottomEl = document.getElementById('clock-bottom');
+  topEl.textContent = formatClock(clocks ? clocks[topColor] : null);
+  bottomEl.textContent = formatClock(clocks ? clocks[bottomColor] : null);
+  topEl.classList.toggle('active', turn===topColor && !gameOver);
+  bottomEl.classList.toggle('active', turn===bottomColor && !gameOver);
+  topEl.classList.toggle('low', clocks && clocks[topColor]!==null && clocks[topColor]<=20);
+  bottomEl.classList.toggle('low', clocks && clocks[bottomColor]!==null && clocks[bottomColor]<=20);
+}
+
+function onSquareClick(r,c){
+  if(gameOver) return;
+  if(gameMode==='ai' && turn===aiColor) return;
+
+  // click same square as selected -> deselect
+  if(selected && selected.r===r && selected.c===c){
+    selected = null; legalMovesForSelected = [];
+    render();
+    return;
+  }
+
+  const piece = board[r][c];
+
+  if(selected){
+    const move = legalMovesForSelected.find(m=>m.r===r && m.c===c);
+    if(move){
+      const wasCapture = !!(move.capture || move.enPassantCapture);
+      if(move.promo){
+        showPromoModal(colorOf(board[selected.r][selected.c]), (choice)=>{
+          const capturedPiece = makeMove(selected, {r,c}, move, choice);
+          const wasCheckOnAI = gameMode==='ai' && isInCheck(board, aiColor);
+          selected = null; legalMovesForSelected = [];
+          if(gameMode==='ai' && turn===aiColor) generatePlayerMoveCommentary(capturedPiece, wasCheckOnAI);
+          afterMove();
+        });
+        return;
+      }
+      const capturedPiece = makeMove(selected, {r,c}, move);
+      const wasCheckOnAI = gameMode==='ai' && isInCheck(board, aiColor);
+      selected = null; legalMovesForSelected = [];
+      if(gameMode==='ai' && turn===aiColor) generatePlayerMoveCommentary(capturedPiece, wasCheckOnAI);
+      afterMove();
+      return;
+    }
+    // clicking another own piece re-selects
+    if(piece && colorOf(piece)===turn){
+      selected = {r,c};
+      legalMovesForSelected = getLegalMoves(board,r,c,castling,enPassant);
+      render();
+      return;
+    }
+    // clicking empty / opponent square with no legal move -> deselect
+    selected = null; legalMovesForSelected = [];
+    render();
+    return;
+  } else {
+    if(piece && colorOf(piece)===turn){
+      selected = {r,c};
+      legalMovesForSelected = getLegalMoves(board,r,c,castling,enPassant);
+      render();
+    }
+  }
+}
+
+function afterMove(){
+  render();
+  checkGameEnd();
+  if(!gameOver && gameMode==='ai' && turn===aiColor){
+    setTimeout(()=>{ aiMove(); }, 450);
+  }
+}
+
+function checkGameEnd(){
+  const moves = getAllLegalMoves(board, turn, castling, enPassant);
+  if(moves.length===0){
+    gameOver = true;
+    stopClockInterval();
+    if(isInCheck(board, turn)){
+      const winner = turn==='white' ? 'Siyah' : 'Beyaz';
+      showEndBanner('Şah Mat!', winner + ' kazandı.');
+    } else {
+      showEndBanner('Pat!', 'Oyun berabere bitti.');
+    }
+  }
+}
+
+function showPromoModal(color, callback){
+  const modal = document.createElement('div');
+  modal.className = 'promo-modal';
+  const choices = ['Q','R','B','N'];
+  modal.innerHTML = `<div class="promo-box">
+    <p>Terfi için taş seçin</p>
+    <div class="promo-choices">
+      ${choices.map(ch=>`<button data-ch="${ch}">${PIECES[ch][color]}</button>`).join('')}
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const ch = btn.dataset.ch;
+      document.body.removeChild(modal);
+      callback(ch);
+    });
+  });
+}
+
+function showEndBanner(title, msg){
+  hideEndBanner();
+  const banner = document.createElement('div');
+  banner.className = 'end-banner';
+  banner.id = 'end-banner';
+  banner.innerHTML = `<div class="end-box">
+    <h2>${title}</h2>
+    <p>${msg}</p>
+    <button class="btn" onclick="startNewGame()">Yeniden Başla</button>
+  </div>`;
+  document.body.appendChild(banner);
+}
+function hideEndBanner(){ const b = document.getElementById('end-banner'); if(b) b.remove(); }
+
+/* ============ INIT ============ */
+document.getElementById('color-field').style.display = 'flex';
+document.getElementById('diff-field').style.display = 'flex';
+gameMode = 'ai';
+startNewGame();
+</script>
+</body>
+</html>

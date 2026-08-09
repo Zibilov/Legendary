@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dinosairum Park</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap');
+:root{
+  --gd:#2d5a27;--gm:#4a7c3f;--gl:#7ab648;--gp:#b8dc8a;
+  --go:#f5c842;--gok:#d4a017;--re:#e74c3c;--rd:#c0392b;--pu:#9b59b6;
+  --bg:#1a2f1a;--ca:#243524;--c2:#2d4a2d;--tx:#e8f5e8;--tm:#a0c0a0;--bo:#3d6b3d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden}
+#topbar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(20,35,20,.97);border-bottom:2px solid var(--bo);padding:10px 20px;display:flex;justify-content:space-between;align-items:center}
+.logo{font-family:'Fredoka One',cursive;font-size:1.6rem;color:var(--gl)}
+#money-display{background:linear-gradient(135deg,#2d4a1a,#3d6b2a);border:2px solid var(--go);border-radius:30px;padding:8px 20px;font-size:1.1rem;font-weight:800;color:var(--go);display:flex;align-items:center;gap:8px}
+#mainnav{position:fixed;top:60px;left:0;right:0;z-index:99;background:rgba(26,47,26,.98);border-bottom:2px solid var(--bo);display:flex;justify-content:center;overflow-x:auto}
+.nav-btn{background:none;border:none;cursor:pointer;color:var(--tm);font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:700;padding:13px 18px;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s}
+.nav-btn:hover{color:var(--tx)}
+.nav-btn.active{color:var(--gl);border-bottom-color:var(--gl)}
+.screen{display:none;padding:125px 16px 30px;min-height:100vh}
+.screen.active{display:block}
+
+.dsel{background:#1a3a1a;color:#e8f5e8;border:2px solid var(--gl);border-radius:12px;padding:9px 14px;font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;outline:none;min-width:200px}
+.dsel:focus{box-shadow:0 0 0 3px rgba(122,182,72,.3)}
+.drow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;padding:12px 16px;background:var(--ca);border:2px solid var(--bo);border-radius:14px}
+.drow label{font-weight:800;color:var(--gl);white-space:nowrap}
+.dprev{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.3);border:1px solid var(--bo);border-radius:10px;padding:6px 12px;min-height:50px}
+.dprev span{font-size:.82rem;color:var(--tm)}
+
+#forest-wrap{position:relative;width:100%;height:calc(100vh - 265px);min-height:280px;background:linear-gradient(180deg,#07111e 0%,#0d2240 22%,#1a3a2a 55%,#0d1f10 100%);border-radius:16px;overflow:hidden;cursor:crosshair;user-select:none}
+.star{position:absolute;background:white;border-radius:50%;animation:tw 3s infinite}
+@keyframes tw{0%,100%{opacity:.2}50%{opacity:.9}}
+.tree{position:absolute;bottom:0;display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.fdino{position:absolute;display:flex;flex-direction:column;align-items:center;animation:bob 3.5s ease-in-out infinite;cursor:pointer}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.dlabel{font-size:.6rem;font-weight:800;background:rgba(0,0,0,.75);padding:2px 7px;border-radius:8px;margin-top:2px;white-space:nowrap;color:var(--gp);border:1px solid rgba(122,182,72,.3)}
+.fp{position:absolute;pointer-events:none;z-index:50;animation:ff 1.4s ease-in forwards;font-size:1.2rem}
+@keyframes ff{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(80px) scale(.4)}}
+
+.sh2{font-family:'Fredoka One',cursive;font-size:1.75rem;color:var(--gl);margin-bottom:4px}
+.sp{color:var(--tm);font-size:.88rem;margin-bottom:20px}
+.clabel{font-family:'Fredoka One',cursive;font-size:1.2rem;padding:7px 0 4px;margin-top:26px;border-bottom:2px solid var(--bo);margin-bottom:14px}
+.clabel.small{color:#7fdbff}.clabel.big{color:#ff9f43}.clabel.giant{color:#ee5a24}.clabel.mega{color:#fd79a8}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px}
+.scard{background:var(--ca);border:2px solid var(--bo);border-radius:14px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;transition:all .2s;position:relative;overflow:hidden}
+.scard:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.scard.owned{border-color:var(--gm);background:linear-gradient(135deg,#1e3a1e,#243a24)}
+.scard.noaf{opacity:.5}
+.dbox{width:100px;height:80px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.15);border-radius:8px}
+.sname{font-weight:800;font-size:.88rem}
+.ptag{background:var(--gok);color:#111;font-weight:800;font-size:.88rem;padding:3px 12px;border-radius:20px}
+.bbtn{width:100%;background:linear-gradient(135deg,var(--gm),var(--gl));border:none;cursor:pointer;color:#fff;font-family:'Nunito',sans-serif;font-size:.85rem;font-weight:800;padding:7px;border-radius:10px;transition:all .2s}
+.bbtn:hover:not(:disabled){transform:scale(1.04)}
+.bbtn:disabled{background:#333;color:#666;cursor:not-allowed}
+.obadge{position:absolute;top:7px;right:7px;background:var(--gl);color:#111;font-size:.6rem;font-weight:800;padding:2px 7px;border-radius:10px}
+.sellcard{background:var(--ca);border:2px solid var(--bo);border-radius:14px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;transition:all .2s}
+.sellcard:hover{transform:translateY(-3px);border-color:var(--re)}
+.sprice{background:rgba(231,76,60,.2);border:1px solid var(--re);color:#ff7675;font-weight:800;font-size:.85rem;padding:3px 12px;border-radius:20px}
+.sbtn{width:100%;background:linear-gradient(135deg,var(--rd),var(--re));border:none;cursor:pointer;color:#fff;font-family:'Nunito',sans-serif;font-size:.85rem;font-weight:800;padding:7px;border-radius:10px;transition:all .2s}
+.sbtn:hover{transform:scale(1.04)}
+#mcount{text-align:center;font-family:'Fredoka One',cursive;font-size:3rem;color:var(--gl);margin-bottom:4px}
+#msub{text-align:center;color:var(--tm);font-size:.9rem;margin-bottom:22px}
+#mlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+.ocard{background:var(--ca);border:2px solid var(--bo);border-radius:14px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;transition:transform .2s}
+.ocard:hover{transform:translateY(-4px);border-color:var(--gm)}
+.cbadge{font-size:.68rem;font-weight:700;padding:2px 10px;border-radius:12px}
+.gbw{width:100%;background:rgba(0,0,0,.3);border-radius:10px;height:7px;overflow:hidden}
+.gb{height:100%;border-radius:10px;background:linear-gradient(90deg,var(--gm),var(--gl));transition:width .5s}
+.glbl{font-size:.7rem;color:var(--tm)}
+.empty-state{text-align:center;padding:60px 20px;color:var(--tm)}
+.empty-state .ei{font-size:3rem;margin-bottom:12px}
+.urow{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:580px){.urow{grid-template-columns:1fr}}
+.usec{background:var(--ca);border:2px solid var(--bo);border-radius:14px;padding:18px}
+.usec h3{font-family:'Fredoka One',cursive;font-size:1.2rem;margin-bottom:4px}
+.udesc{font-size:.78rem;color:var(--tm);margin-bottom:14px}
+.uitem{background:var(--c2);border:1px solid var(--bo);border-radius:10px;padding:10px 13px;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.uitem.bought{border-color:var(--gm);background:rgba(74,124,63,.15)}
+.uinfo{flex:1}.uname{font-weight:700;font-size:.85rem}.usub{font-size:.72rem;color:var(--tm);margin-top:2px}
+.ubtn{background:linear-gradient(135deg,var(--pu),#8e44ad);border:none;cursor:pointer;color:#fff;font-family:'Nunito',sans-serif;font-size:.78rem;font-weight:800;padding:6px 12px;border-radius:9px;white-space:nowrap;transition:all .2s}
+.ubtn:hover:not(:disabled){transform:scale(1.04)}
+.ubtn:disabled{background:#333;color:#666;cursor:not-allowed}
+.ubtn.got{background:var(--gm);cursor:default}
+.dbtn{width:52px;height:52px;font-size:1.4rem;font-weight:800;background:linear-gradient(135deg,#2d5a27,#4a7c3f);border:2px solid #7ab648;border-radius:10px;color:white;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:transform .1s;user-select:none}
+.dbtn:active{transform:scale(.88)}
+#toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);z-index:999;background:#1a2f1a;color:var(--tx);font-size:.88rem;font-weight:700;padding:11px 22px;border-radius:28px;border:2px solid var(--gm);box-shadow:0 8px 30px rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .3s;white-space:nowrap}
+#toast.show{opacity:1}
+#savi{position:fixed;bottom:26px;right:16px;z-index:998;font-size:.7rem;color:var(--tm);background:rgba(0,0,0,.5);padding:4px 11px;border-radius:18px;opacity:0;transition:opacity .3s}
+#savi.show{opacity:1}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bo);border-radius:3px}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <div class="logo">🦕 Dinosairum Park</div>
+  <div id="money-display">💰 <span id="mval">2.500</span> $</div>
+</div>
+<nav id="mainnav">
+  <button class="nav-btn active" onclick="go('oyna')" data-screen="oyna">🎮 Oyna</button>
+  <button class="nav-btn" onclick="go('dinolarim')" data-screen="dinolarim">🦖 Dinozorlarım</button>
+  <button class="nav-btn" onclick="go('satin')" data-screen="satin">🛒 Satın Al</button>
+  <button class="nav-btn" onclick="go('sat')" data-screen="sat">💸 Sat</button>
+  <button class="nav-btn" onclick="go('yukselt')" data-screen="yukselt">⚡ Yükseltmeler</button>
+  <button class="nav-btn" onclick="go('yaris')" data-screen="yaris">🏁 Yarış</button>
+</nav>
+
+<div id="screen-oyna" class="screen active">
+  <div class="drow">
+    <label>🦕 Dinozor seç:</label>
+    <select id="forest-sel" class="dsel" onchange="forestSel(this.value)">
+      <option value="">🌲 Tüm dinozorlar</option>
+    </select>
+    <div id="forest-prev" class="dprev"><span>Tümü ormanda</span></div>
+  </div>
+  <div id="forest-wrap"></div>
+</div>
+
+<div id="screen-dinolarim" class="screen">
+  <div id="mcount">0</div><div id="msub">dinozorun var</div>
+  <div id="mlist"></div>
+</div>
+<div id="screen-satin" class="screen">
+  <div class="sh2">🛒 Satın Al</div>
+  <div class="sp">Koleksiyonunu büyüt! 52 farklı dinozor seni bekliyor.</div>
+  <div id="shop-content"></div>
+</div>
+<div id="screen-sat" class="screen">
+  <div class="sh2">💸 Sat</div>
+  <div class="sp">Dinozorlarını sat, birikimini artır.</div>
+  <div id="sell-content"></div>
+</div>
+<div id="screen-yukselt" class="screen">
+  <div class="sh2">⚡ Yükseltmeler</div>
+  <div class="sp">Yemleri ve ortamı güçlendir.</div>
+  <div id="upg-content"></div>
+</div>
+<div id="screen-yaris" class="screen">
+  <div class="sh2">🏁 Dinozor Yarışı</div>
+  <div class="sp">Dinozorunu seç ve klavyeyle kontrol et!</div>
+  <div id="yaris-content"></div>
+</div>
+<div id="toast"></div>
+<div id="savi">💾 Kaydedildi</div>
+
+<script>
+const PAL=['#27ae60','#e74c3c','#2980b9','#f39c12','#8e44ad','#16a085','#d35400','#c0392b','#1abc9c','#e67e22','#2ecc71','#9b59b6'];
+const pc=id=>PAL[id%PAL.length];
+const dc=id=>PAL[id%PAL.length].replace(/[0-9a-f]{2}/gi,m=>Math.max(0,parseInt(m,16)-40).toString(16).padStart(2,'0'));
+
+function svgSmall(id,w,h){const c=pc(id),d=dc(id);return`<svg width="${w}" height="${h}" viewBox="0 0 80 65" xmlns="http://www.w3.org/2000/svg"><ellipse cx="14" cy="45" rx="12" ry="6" fill="${d}" transform="rotate(-25 14 45)"/><ellipse cx="38" cy="40" rx="20" ry="13" fill="${c}"/><ellipse cx="50" cy="25" rx="8" ry="10" fill="${c}" transform="rotate(15 50 25)"/><ellipse cx="60" cy="17" rx="10" ry="8" fill="${c}"/><circle cx="64" cy="14" r="2.5" fill="#1a1a1a"/><circle cx="64.8" cy="13.3" r=".9" fill="white"/><ellipse cx="58" cy="22" rx="3" ry="1.5" fill="${d}"/><rect x="28" y="51" width="6" height="11" rx="3" fill="${d}"/><rect x="38" y="51" width="6" height="11" rx="3" fill="${d}"/><line x1="54" y1="32" x2="62" y2="38" stroke="${d}" stroke-width="3.5" stroke-linecap="round"/><ellipse cx="9" cy="43" rx="4" ry="2" fill="${d}" transform="rotate(-35 9 43)"/></svg>`;}
+function svgBig(id,w,h){const c=pc(id),d=dc(id);return`<svg width="${w}" height="${h}" viewBox="0 0 90 70" xmlns="http://www.w3.org/2000/svg"><ellipse cx="12" cy="50" rx="14" ry="7" fill="${d}" transform="rotate(-20 12 50)"/><ellipse cx="44" cy="46" rx="26" ry="17" fill="${c}"/><rect x="55" y="24" width="12" height="22" rx="6" fill="${c}"/><ellipse cx="66" cy="21" rx="13" ry="10" fill="${c}"/><polygon points="63,8 66,1 70,8" fill="${d}"/><circle cx="71" cy="17" r="3" fill="#1a1a1a"/><circle cx="72" cy="16" r="1" fill="white"/><ellipse cx="55" cy="18" rx="6" ry="9" fill="${d}" opacity=".7"/><polygon points="20,42 23,30 26,42" fill="${d}"/><polygon points="30,40 33,28 36,40" fill="${d}"/><rect x="30" y="61" width="8" height="12" rx="3" fill="${d}"/><rect x="44" y="61" width="8" height="12" rx="3" fill="${d}"/><line x1="60" y1="36" x2="68" y2="44" stroke="${d}" stroke-width="4" stroke-linecap="round"/></svg>`;}
+function svgGiant(id,w,h){const c=pc(id),d=dc(id);return`<svg width="${w}" height="${h}" viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg"><ellipse cx="10" cy="58" rx="16" ry="8" fill="${d}" transform="rotate(-12 10 58)"/><ellipse cx="50" cy="54" rx="32" ry="21" fill="${c}"/><rect x="68" y="30" width="13" height="24" rx="6" fill="${c}"/><ellipse cx="80" cy="26" rx="15" ry="12" fill="${c}"/><circle cx="87" cy="20" r="3.5" fill="#1a1a1a"/><circle cx="88" cy="19" r="1.2" fill="white"/><rect x="73" y="33" width="3.5" height="6" rx="1.5" fill="white"/><rect x="79" y="33" width="3.5" height="6" rx="1.5" fill="white"/><rect x="34" y="73" width="10" height="14" rx="4" fill="${d}"/><rect x="50" y="73" width="10" height="14" rx="4" fill="${d}"/><line x1="70" y1="42" x2="78" y2="52" stroke="${d}" stroke-width="4.5" stroke-linecap="round"/></svg>`;}
+function svgMega(id,w,h){const c=pc(id),d=dc(id);return`<svg width="${w}" height="${h}" viewBox="0 0 110 90" xmlns="http://www.w3.org/2000/svg"><path d="M8 70 Q3 62 10 54 Q15 47 20 56" fill="${d}"/><ellipse cx="58" cy="65" rx="38" ry="24" fill="${c}"/><path d="M80 48 Q86 26 78 12" stroke="${c}" stroke-width="16" fill="none" stroke-linecap="round"/><ellipse cx="75" cy="11" rx="14" ry="10" fill="${c}"/><circle cx="81" cy="7" r="3" fill="#1a1a1a"/><circle cx="82" cy="6" r="1" fill="white"/><circle cx="36" cy="48" r="6" fill="${d}"/><circle cx="50" cy="43" r="6" fill="${d}"/><circle cx="64" cy="40" r="6" fill="${d}"/><rect x="36" y="87" width="12" height="14" rx="4" fill="${d}"/><rect x="57" y="87" width="12" height="14" rx="4" fill="${d}"/></svg>`;}
+function dSVG(id,cls,w,h){return cls==='small'?svgSmall(id,w,h):cls==='big'?svgBig(id,w,h):cls==='giant'?svgGiant(id,w,h):svgMega(id,w,h);}
+
+const CLS={small:{label:'🔵 Küçük',badge:'#0984e3'},big:{label:'🟠 Büyük',badge:'#e67e22'},giant:{label:'🔴 Dev',badge:'#d63031'},mega:{label:'💜 Devasa',badge:'#6c5ce7'}};
+const ALL=[
+  {id:0,name:'Microraptor',cls:'small'},{id:1,name:'Micropachycephalosaurus',cls:'small'},{id:2,name:'Heterodontosaurus',cls:'small'},
+  {id:3,name:'Oviraptor',cls:'small'},{id:4,name:'Compsognathus',cls:'small'},{id:5,name:'Archaeornithomimus',cls:'small'},
+  {id:6,name:'Scutellosaurus',cls:'small'},{id:7,name:'Sinosauropteryx',cls:'small'},{id:8,name:'Psittacosaurus',cls:'small'},
+  {id:9,name:'Archaeopteryx',cls:'small'},{id:10,name:'Minmi',cls:'small'},{id:11,name:'Buitreraptor',cls:'small'},
+  {id:12,name:'Leaellynasaura',cls:'small'},{id:13,name:'Huayangosaurus',cls:'small'},{id:14,name:'Struthiomimus',cls:'small'},
+  {id:15,name:'Pentaceratops',cls:'big'},{id:16,name:'Herrerasaurus',cls:'big'},{id:17,name:'Styracosaurus',cls:'big'},
+  {id:18,name:'Utahraptor',cls:'big'},{id:19,name:'Cryolophosaurus',cls:'big'},{id:20,name:'Nothronychus',cls:'big'},
+  {id:21,name:'Triceratops',cls:'big'},{id:22,name:'Muttaburrasaurus',cls:'big'},{id:23,name:'Europasaurus',cls:'big'},
+  {id:24,name:'Ouranosaurus',cls:'big'},{id:25,name:'Carnotaurus',cls:'big'},{id:26,name:'Stegosaurus',cls:'big'},
+  {id:27,name:'Corythosaurus',cls:'big'},{id:28,name:'Plateosaurus',cls:'big'},{id:29,name:'Pachycephalosaurus',cls:'big'},
+  {id:30,name:'Maiasaura',cls:'giant'},{id:31,name:'İguanodon',cls:'giant'},{id:32,name:'Ankylosaurus',cls:'giant'},
+  {id:33,name:'Sintaosaurus',cls:'giant'},{id:34,name:'Lessemsaurus',cls:'giant'},{id:35,name:'Amargasaurus',cls:'giant'},
+  {id:36,name:'Riojasaurus',cls:'giant'},{id:37,name:'Yangchuanosaurus',cls:'giant'},{id:38,name:'Therizinosaurus',cls:'giant'},
+  {id:39,name:'Acrocanthosaurus',cls:'giant'},{id:40,name:'Spinosaurus',cls:'giant'},{id:41,name:'Edmontosaurus',cls:'giant'},
+  {id:42,name:'Shunosaurus',cls:'giant'},{id:43,name:'Tyrannosaurus Rex',cls:'giant'},
+  {id:44,name:'Rebbachisaurus',cls:'mega'},{id:45,name:'Apatosaurus',cls:'mega'},{id:46,name:'Brachiosaurus',cls:'mega'},
+  {id:47,name:'Mamenchisaurus',cls:'mega'},{id:48,name:'Diplodocus',cls:'mega'},{id:49,name:'Nurosaurus',cls:'mega'},
+  {id:50,name:'Paralititan',cls:'mega'},{id:51,name:'Argentinosaurus',cls:'mega'}
+];
+ALL.forEach(d=>{d.buy=1000+d.id*5000;d.sell=d.buy+250;});
+
+const SK='dinopark_v4';
+function defState(){return{money:2500,owned:[],upg:{food:0,bg:0}};}
+function load(){try{const r=localStorage.getItem(SK);if(!r)return defState();const s=JSON.parse(r);if(!s.upg)s.upg={food:0,bg:0};if(!Array.isArray(s.owned))s.owned=[];return s;}catch(e){return defState();}}
+function save(){try{localStorage.setItem(SK,JSON.stringify(ST));const el=document.getElementById('savi');el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),1600);}catch(e){}}
+let ST=load();
+function fmt(n){return n.toLocaleString('tr-TR');}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2400);}
+function updMoney(){document.getElementById('mval').textContent=fmt(ST.money);}
+
+function go(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelector('[data-screen="'+name+'"]').classList.add('active');
+  if(name==='dinolarim')renderMyDinos();
+  if(name==='satin')renderShop();
+  if(name==='sat')renderSell();
+  if(name==='yukselt')renderUpg();
+  if(name==='oyna')renderForest();
+  if(name==='yaris')renderRace();
+}
+
+const FUP=[1000,1200,1400,1600,1800,2000,2200];
+const BUP=[2000,2200,2400,2600,2800];
+function growDur(){return Math.max(30,Math.round(120*(1-(ST.upg.food/7)*0.75)));}
+
+let feedIv=null,mx=0,my=0,focusId=null;
+
+// ── ORMAN DROPDOWN ──
+function refreshForestDropdown(){
+  const sel=document.getElementById('forest-sel');
+  if(!sel)return;
+  const cur=sel.value;
+  let opts='<option value="">🌲 Tüm dinozorlar</option>';
+  const order=['small','big','giant','mega'];
+  order.forEach(cls=>{
+    const grp=ST.owned.filter(o=>{const d=ALL.find(x=>x.id===o.id);return d&&d.cls===cls;});
+    if(!grp.length)return;
+    opts+='<optgroup label="'+CLS[cls].label+'">';
+    grp.forEach(o=>{
+      const d=ALL.find(x=>x.id===o.id);
+      const g=Math.round(o.growthPct||0);
+      opts+='<option value="'+d.id+'"'+(focusId===d.id?' selected':'')+'>'+d.name+(g<100?' ('+g+'%)':' ✅')+'</option>';
+    });
+    opts+='</optgroup>';
+  });
+  sel.innerHTML=opts;
+  refreshForestPreview();
+}
+
+function refreshForestPreview(){
+  const prev=document.getElementById('forest-prev');
+  if(!prev)return;
+  if(!focusId){prev.innerHTML='<span>Tüm dinozorlar ormanda 🌲</span>';return;}
+  const d=ALL.find(x=>x.id===focusId);
+  const o=ST.owned.find(x=>x.id===focusId);
+  if(!d||!o){prev.innerHTML='<span>Tüm dinozorlar ormanda 🌲</span>';return;}
+  const g=Math.round(o.growthPct||0),cl=CLS[d.cls];
+  prev.innerHTML=dSVG(d.id,d.cls,44,34)
+    +'<div><div style="font-weight:800;font-size:.85rem">'+d.name+'</div>'
+    +'<div style="font-size:.72rem;margin-top:2px"><span style="background:'+cl.badge+';color:white;padding:1px 6px;border-radius:8px">'+cl.label+'</span> '+(g<100?'🥚 %'+g:'✅ Tam büyümüş!')+'</div></div>';
+}
+
+function forestSel(val){
+  focusId=val!==''?parseInt(val):null;
+  refreshForestPreview();
+  drawForest();
+}
+
+// ── ORMAN ÇİZ ──
+function drawForest(){
+  const w=document.getElementById('forest-wrap');
+  if(!w)return;
+  w.innerHTML='';
+  // boş mesajı
+  if(!ST.owned.length){
+    w.innerHTML='<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--tm)"><div style="font-size:3rem;margin-bottom:10px">🌲</div><p style="font-size:.9rem;line-height:1.7;max-width:260px">Ormanın içi bomboş...<br>Henüz hiç dinozorun yok.<br><b>Satın Al</b>\'a giderek<br>ilk dinozorunu sahiplen!</p></div>';
+  } else {
+    w.insertAdjacentHTML('beforeend','<div style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);color:var(--tm);font-size:.78rem;padding:5px 16px;border-radius:20px;pointer-events:none;z-index:60">🖱️ Basılı tut → yem yağdır!</div>');
+  }
+  // yıldızlar
+  for(let i=0;i<28;i++){
+    const s=document.createElement('div');s.className='star';
+    const sz=Math.random()*2+.5;
+    s.style.cssText='width:'+sz+'px;height:'+sz+'px;top:'+Math.random()*30+'%;left:'+Math.random()*100+'%;animation-delay:'+Math.random()*3+'s';
+    w.appendChild(s);
+  }
+  // ağaçlar
+  const tc=10+ST.upg.bg*4;
+  const tClr=['#1a3a1a','#2d5a27','#3d7a35','#52a845','#6abf55'][Math.min(ST.upg.bg,4)];
+  for(let i=0;i<tc;i++){
+    const t=document.createElement('div');t.className='tree';
+    const h=35+Math.random()*70,tw=h*.65,left=Math.random()*95+2;
+    t.style.cssText='left:'+left+'%;bottom:0;z-index:'+Math.round(h);
+    t.innerHTML='<div style="width:0;height:0;border-left:'+tw/2+'px solid transparent;border-right:'+tw/2+'px solid transparent;border-bottom:'+h*.7+'px solid '+tClr+'"></div>'
+      +'<div style="width:'+tw*.18+'px;height:'+h*.32+'px;background:#4a2a0a;border-radius:2px"></div>';
+    w.appendChild(t);
+  }
+  // dinozorlar
+  const list=focusId!==null?ST.owned.filter(o=>o.id===focusId):ST.owned;
+  list.forEach((o,i)=>{
+    const dn=ALL.find(d=>d.id===o.id);if(!dn)return;
+    const g=o.growthPct||0;
+    const maxSz=dn.cls==='mega'?88:dn.cls==='giant'?76:dn.cls==='big'?66:56;
+    const sz=Math.round(22+(maxSz-22)*(g/100));
+    const focused=focusId!==null;
+    const bot=focused?18:10+(i*7)%22;
+    const lft=focused?38:4+(i*19+5)%89;
+    const dsz=focused?Math.round(sz*1.7):sz;
+    const el=document.createElement('div');el.className='fdino';
+    el.style.cssText='bottom:'+bot+'%;left:'+lft+'%;z-index:'+(50+i)+';animation-delay:'+i*.4+'s'+(focused?';filter:drop-shadow(0 0 18px rgba(122,182,72,.8))':'');
+    const gl=g<100?' ('+Math.round(g)+'%)':'';
+    el.innerHTML=dSVG(dn.id,dn.cls,dsz,Math.round(dsz*.8))+'<div class="dlabel">'+(focused?'🎯 ':'')+dn.name+gl+'</div>';
+    w.appendChild(el);
+  });
+  // olaylar
+  w.onmousedown=e=>{if(!ST.owned.length)return;trackM(e);spawnFood();feedIv=setInterval(spawnFood,160);};
+  w.onmouseup=stopFeed;w.onmouseleave=stopFeed;w.onmousemove=trackM;
+  w.ontouchstart=e=>{if(!ST.owned.length)return;trackT(e);spawnFood();feedIv=setInterval(spawnFood,160);};
+  w.ontouchend=stopFeed;w.ontouchmove=trackT;
+}
+
+function renderForest(){
+  refreshForestDropdown();
+  // forest dropdown'u bağla (onchange yerine addEventListener)
+  const fsel=document.getElementById('forest-sel');
+  if(fsel){
+    const newSel=fsel.cloneNode(true); // eski listener'ları temizle
+    fsel.parentNode.replaceChild(newSel,fsel);
+    newSel.addEventListener('change',function(){forestSel(this.value);});
+  }
+  drawForest();
+}
+
+function trackM(e){const r=document.getElementById('forest-wrap').getBoundingClientRect();mx=e.clientX-r.left;my=e.clientY-r.top;}
+function trackT(e){const r=document.getElementById('forest-wrap').getBoundingClientRect();mx=e.touches[0].clientX-r.left;my=e.touches[0].clientY-r.top;}
+function stopFeed(){clearInterval(feedIv);feedIv=null;}
+
+const FOODS=['🪲','🦟','🪰','🐛','🦗','🐞'];
+function spawnFood(){
+  const w=document.getElementById('forest-wrap');if(!w)return;
+  const p=document.createElement('div');p.className='fp';
+  p.style.left=(mx+(Math.random()-.5)*50)+'px';p.style.top=(my-15)+'px';
+  p.textContent=FOODS[Math.floor(Math.random()*FOODS.length)];
+  w.appendChild(p);
+  const inc=100/(growDur()*1000/160)*10;
+  const targets=focusId!==null?ST.owned.filter(o=>o.id===focusId):ST.owned;
+  targets.forEach(o=>{if((o.growthPct||0)<100){o.growthPct=Math.min(100,(o.growthPct||0)+inc);}});
+  save();
+  setTimeout(()=>p.remove(),1400);
+}
+
+setInterval(()=>{
+  let ch=false;
+  ST.owned.forEach(o=>{if((o.growthPct||0)<100){o.growthPct=Math.min(100,(o.growthPct||0)+100/600);ch=true;}});
+  if(ch){save();if(document.getElementById('screen-oyna').classList.contains('active')){refreshForestDropdown();}}
+},1000);
+
+// ── DİNOZORLARIM ──
+function renderMyDinos(){
+  document.getElementById('mcount').textContent=ST.owned.length;
+  const list=document.getElementById('mlist');
+  if(!ST.owned.length){list.innerHTML='<div class="empty-state"><div class="ei">🦴</div><p>Henüz hiç dinozorun yok.<br>Satın Al\'a git!</p></div>';return;}
+  list.innerHTML=ST.owned.map(o=>{
+    const d=ALL.find(x=>x.id===o.id),cl=CLS[d.cls],g=Math.round(o.growthPct||0);
+    return '<div class="ocard">'+dSVG(d.id,d.cls,80,65)+'<div style="font-weight:800;font-size:.9rem">'+d.name+'</div>'
+      +'<span class="cbadge" style="background:'+cl.badge+';color:white">'+cl.label+'</span>'
+      +'<div class="gbw"><div class="gb" style="width:'+g+'%"></div></div>'
+      +'<div class="glbl">'+(g<100?'🥚 Büyüme: %'+g:'✅ Tam büyümüş!')+'</div></div>';
+  }).join('');
+}
+
+// ── SATIN AL ──
+function renderShop(){
+  const order=['small','big','giant','mega'];let h='';
+  order.forEach(cls=>{
+    h+='<div class="clabel '+cls+'">'+{small:'🔵 Küçük Dinozorlar',big:'🟠 Büyük Dinozorlar',giant:'🔴 Dev Dinozorlar',mega:'💜 Devasa Dinozorlar'}[cls]+'</div><div class="sgrid">';
+    ALL.filter(d=>d.cls===cls).forEach(d=>{
+      const own=ST.owned.some(o=>o.id===d.id),can=ST.money>=d.buy;
+      h+='<div class="scard'+(own?' owned':'')+((!can&&!own)?' noaf':'')+'">'+
+        (own?'<span class="obadge">✔ Sahipsin</span>':'')+
+        '<div class="dbox">'+dSVG(d.id,d.cls,98,78)+'</div>'+
+        '<div class="sname">'+d.name+'</div><div class="ptag">💰 '+fmt(d.buy)+' $</div>'+
+        '<button class="bbtn" onclick="buyDino('+d.id+')"'+(own||!can?' disabled':'')+'>'+
+        (own?'✔ Satın Alındı':can?'🛒 Satın Al':'💸 Yetersiz')+'</button></div>';
+    });h+='</div>';
+  });
+  document.getElementById('shop-content').innerHTML=h;
+}
+function buyDino(id){
+  const d=ALL.find(x=>x.id===id);if(!d||ST.owned.some(o=>o.id===id))return;
+  if(ST.money<d.buy){toast('Yetersiz bakiye! 💸');return;}
+  ST.money-=d.buy;ST.owned.push({id,boughtAt:Date.now(),growthPct:0});
+  updMoney();save();toast('🦕 '+d.name+' sahiplenildi!');renderShop();
+}
+
+// ── SAT ──
+function renderSell(){
+  const el=document.getElementById('sell-content');
+  if(!ST.owned.length){el.innerHTML='<div class="empty-state"><div class="ei">🏷️</div><p>Satacak dinozorun yok.</p></div>';return;}
+  const order=['small','big','giant','mega'];let h='';
+  order.forEach(cls=>{
+    const grp=ST.owned.filter(o=>{const d=ALL.find(x=>x.id===o.id);return d&&d.cls===cls;});
+    if(!grp.length)return;
+    h+='<div class="clabel '+cls+'">'+{small:'🔵 Küçük',big:'🟠 Büyük',giant:'🔴 Dev',mega:'💜 Devasa'}[cls]+'</div><div class="sgrid">';
+    grp.forEach(o=>{
+      const d=ALL.find(x=>x.id===o.id),grown=(o.growthPct||0)>=100,price=grown?Math.round(d.sell*1.1):d.sell;
+      h+='<div class="sellcard"><div class="dbox">'+dSVG(d.id,d.cls,98,78)+'</div>'
+        +'<div class="sname">'+d.name+'</div><div class="sprice">💰 '+fmt(price)+' $'+(grown?' 🌟':'')+'</div>'
+        +'<button class="sbtn" onclick="sellDino('+d.id+')">💸 Sat</button></div>';
+    });h+='</div>';
+  });
+  el.innerHTML=h;
+}
+function sellDino(id){
+  const i=ST.owned.findIndex(o=>o.id===id);if(i===-1)return;
+  const d=ALL.find(x=>x.id===id),grown=(ST.owned[i].growthPct||0)>=100,actual=grown?Math.round(d.sell*1.1):d.sell;
+  if(focusId===id)focusId=null;
+  ST.money+=actual;ST.owned.splice(i,1);
+  updMoney();save();toast('💸 '+d.name+' '+fmt(actual)+'$\'ye satıldı!'+(grown?' 🌟':''));renderSell();
+}
+
+// ── YÜKSELTMELEr ──
+const FL=[{n:'Taze Böcek Yığını',s:'%15 daha hızlı büyüme'},{n:'Özel Larva Karışımı',s:'%25 daha hızlı'},{n:'Protein Böceği',s:'%35 daha hızlı'},{n:'Kraliyet Balı Larva',s:'%50 daha hızlı'},{n:'Fosil Özlü Yem',s:'%60 daha hızlı'},{n:'Ejderha Böceği Ekstrak',s:'%70 daha hızlı'},{n:'Ultra Dino Yemi',s:'30 saniyede büyür!'}];
+const BL=[{n:'Yaban Ormanı',s:'Daha fazla ağaç'},{n:'Tropikal Cennet',s:'Egzotik bitkiler'},{n:'Dino Vadisi',s:'Dev kayalar ve şelale'},{n:'Jurassik Adası',s:'Volkan manzarası'},{n:'Kristal Orman',s:'Büyülü parıltı!'}];
+function renderUpg(){
+  const mkF=()=>FL.map((u,i)=>{const got=ST.upg.food>i,cur=ST.upg.food===i,p=FUP[i],can=ST.money>=p;return'<div class="uitem'+(got?' bought':'')+'"><div class="uinfo"><div class="uname">'+(i+1)+'. '+u.n+(got?' ✅':'')+'</div><div class="usub">'+u.s+'</div></div>'+(got?'<button class="ubtn got" disabled>✔</button>':cur?'<button class="ubtn" onclick="buyF('+i+')"'+(can?'':' disabled')+'>💰 '+fmt(p)+'$</button>':'<button class="ubtn" disabled style="background:#333;color:#666">🔒</button>')+'</div>';}).join('');
+  const mkB=()=>BL.map((u,i)=>{const got=ST.upg.bg>i,cur=ST.upg.bg===i,p=BUP[i],can=ST.money>=p;return'<div class="uitem'+(got?' bought':'')+'"><div class="uinfo"><div class="uname">'+(i+1)+'. '+u.n+(got?' ✅':'')+'</div><div class="usub">'+u.s+'</div></div>'+(got?'<button class="ubtn got" disabled>✔</button>':cur?'<button class="ubtn" onclick="buyB('+i+')" style="background:linear-gradient(135deg,#6c5ce7,#a29bfe)"'+(can?'':' disabled')+'>💰 '+fmt(p)+'$</button>':'<button class="ubtn" disabled style="background:#333;color:#666">🔒</button>')+'</div>';}).join('');
+  document.getElementById('upg-content').innerHTML='<div class="urow"><div class="usec"><h3 style="color:#f39c12">🍖 Yem</h3><div class="udesc">Daha iyi yem → daha hızlı büyüme!</div>'+mkF()+'</div><div class="usec"><h3 style="color:#a29bfe">🌲 Arkaplan</h3><div class="udesc">Ormanını geliştir!</div>'+mkB()+'</div></div>';
+}
+function buyF(i){if(ST.money<FUP[i]||ST.upg.food!==i)return;ST.money-=FUP[i];ST.upg.food++;updMoney();save();toast('🍖 '+FL[i].n+' alındı!');renderUpg();}
+function buyB(i){if(ST.money<BUP[i]||ST.upg.bg!==i)return;ST.money-=BUP[i];ST.upg.bg++;updMoney();save();toast('🌲 '+BL[i].n+' alındı!');renderUpg();}
+
+// ── YARIŞ ──
+const FINISH=78;
+const RNAMES=['Dişli','Hızlı','Koca','Yırtıcı'];
+const RCOLS=['#e74c3c','#3498db','#f39c12','#9b59b6'];
+let RS={selId:null,px:2,lane:1,rivals:[],done:false,iv:null,started:false,speed:.4,pr:0};
+
+function renderRace(){
+  stopRace();
+  const el=document.getElementById('yaris-content');
+  if(!ST.owned.length){el.innerHTML='<div class="empty-state"><div class="ei">🏁</div><p>Önce bir dinozor satın al!</p></div>';return;}
+  RS.started=false;RS.done=false;RS.px=2;RS.lane=1;
+
+  const order=['small','big','giant','mega'];
+  let opts='<option value="">-- Dinozor seç --</option>';
+  order.forEach(cls=>{
+    const grp=ST.owned.filter(o=>{const d=ALL.find(x=>x.id===o.id);return d&&d.cls===cls;});
+    if(!grp.length)return;
+    opts+='<optgroup label="'+CLS[cls].label+'">';
+    grp.forEach(o=>{const d=ALL.find(x=>x.id===o.id);opts+='<option value="'+d.id+'"'+(RS.selId===d.id?' selected':'')+'>'+d.name+'</option>';});
+    opts+='</optgroup>';
+  });
+
+  el.innerHTML=
+    '<div id="rwmsg" style="display:none;font-family:Fredoka One,cursive;font-size:1.8rem;text-align:center;margin-bottom:10px"></div>'
+    +'<div class="drow" style="margin-bottom:14px">'
+    +'<label>🦕 Yarışacak dinozor:</label>'
+    +'<select id="race-sel" class="dsel" onchange="raceSel(this.value)">'+opts+'</select>'
+    +'<div id="race-prev" class="dprev" style="min-width:140px"><span>Seç ve yarış!</span></div>'
+    +'</div>'
+    +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">'
+    +'<button id="rbtn" onclick="startRace()" style="background:linear-gradient(135deg,#27ae60,#7ab648);border:none;color:white;font-family:Nunito,sans-serif;font-size:1rem;font-weight:800;padding:10px 26px;border-radius:12px;cursor:pointer;opacity:'+(RS.selId?'1':'.4')+'">🏁 Başla!</button>'
+    +'<div id="rstatus" style="font-size:.85rem;color:var(--tm)">Dinozor seç, sonra Başla!</div>'
+    +'</div>'
+    +'<div id="track-wrap" style="position:relative;width:100%;height:320px;background:#3a3a3a;border-radius:14px;border:3px solid #555;overflow:hidden">'
+    +'<div style="position:absolute;top:0;left:0;right:0;height:3px;background:#fff;z-index:2"></div>'
+    +'<div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:#fff;z-index:2"></div>'
+    +'<div style="position:absolute;top:25%;left:0;right:0;height:2px;background:repeating-linear-gradient(90deg,#f5c842 0,#f5c842 36px,transparent 36px,transparent 72px);z-index:2"></div>'
+    +'<div style="position:absolute;top:50%;left:0;right:0;height:2px;background:repeating-linear-gradient(90deg,#f5c842 0,#f5c842 36px,transparent 36px,transparent 72px);z-index:2"></div>'
+    +'<div style="position:absolute;top:75%;left:0;right:0;height:2px;background:repeating-linear-gradient(90deg,#f5c842 0,#f5c842 36px,transparent 36px,transparent 72px);z-index:2"></div>'
+    +'<div style="position:absolute;top:0;bottom:0;left:3%;width:8px;background:repeating-linear-gradient(180deg,#fff 0,#fff 10px,#111 10px,#111 20px);z-index:5"></div>'
+    +'<div style="position:absolute;top:0;bottom:0;right:46px;width:14px;background:repeating-linear-gradient(180deg,#111 0,#111 10px,#fff 10px,#fff 20px);z-index:10"></div>'
+    +'<div style="position:absolute;top:6px;right:26px;font-size:1.8rem;z-index:11">🚩</div>'
+    +'<div id="rtrack" style="position:absolute;inset:0;z-index:15"></div>'
+    +'</div>'
+    +'<div style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">'
+    +'<div style="display:flex;flex-direction:column;align-items:center;gap:5px">'
+    +'<button id="btn-up" class="dbtn" onclick="mp(0,-1)">↑</button>'
+    +'<div style="display:flex;gap:5px"><button id="btn-left" class="dbtn" onclick="mp(-1,0)">←</button><button id="btn-down" class="dbtn" onclick="mp(0,1)">↓</button><button id="btn-right" class="dbtn" onclick="mp(1,0)">→</button></div>'
+    +'</div>'
+    +'<div style="font-size:.8rem;color:var(--tm);line-height:1.8">→ Hızlan &nbsp; ← Yavaşla<br>↑↓ Şerit değiştir &nbsp; 🏆</div>'
+    +'</div>';
+
+  // DOM hazır olduktan sonra bağla
+  const rsel=document.getElementById('race-sel');
+  if(rsel) rsel.addEventListener('change', function(){ raceSel(this.value); });
+  const rbtn=document.getElementById('rbtn');
+  if(rbtn) rbtn.addEventListener('click', startRace);
+  const bup=document.getElementById('btn-up');    if(bup) bup.addEventListener('click',()=>mp(0,-1));
+  const bdn=document.getElementById('btn-down');  if(bdn) bdn.addEventListener('click',()=>mp(0,1));
+  const blt=document.getElementById('btn-left');  if(blt) blt.addEventListener('click',()=>mp(-1,0));
+  const brt=document.getElementById('btn-right'); if(brt) brt.addEventListener('click',()=>mp(1,0));
+
+  if(RS.selId)updateRacePrev();
+  drawTrack();
+}
+
+function raceSel(val){
+  RS.selId=val!==''?parseInt(val):null;RS.started=false;RS.done=false;RS.px=2;RS.lane=1;stopRace();
+  updateRacePrev();
+  const btn=document.getElementById('rbtn');
+  if(btn) btn.style.opacity=RS.selId!==null?'1':'.4';
+  const st=document.getElementById('rstatus');if(st)st.textContent=RS.selId?'Seçildi! Başlaya bas 🎮':'Dinozor seç, sonra Başla!';
+  const wm=document.getElementById('rwmsg');if(wm){wm.style.display='none';}
+  drawTrack();
+}
+
+function updateRacePrev(){
+  const prev=document.getElementById('race-prev');if(!prev)return;
+  if(RS.selId===null){prev.innerHTML='<span>Seç ve yarış!</span>';return;}
+  const d=ALL.find(x=>x.id===RS.selId),cl=CLS[d.cls];
+  const r=(d.buy-1000)/(ALL[ALL.length-1].buy-1000);
+  const spd=r<.25?'🐢 Yavaş':r<.5?'🐇 Orta':r<.75?'🐆 Hızlı':'⚡ Süper';
+  prev.innerHTML=dSVG(d.id,d.cls,44,34)+'<div><div style="font-weight:800;font-size:.85rem">'+d.name+'</div>'
+    +'<div style="font-size:.72rem;margin-top:2px"><span style="background:'+cl.badge+';color:white;padding:1px 6px;border-radius:8px">'+cl.label+'</span> '+spd+'</div></div>';
+}
+
+function startRace(){
+  if(RS.selId===null){toast('Önce dinozor seç!');return;}
+  stopRace();RS.px=2;RS.lane=1;RS.done=false;RS.started=true;
+  const d=ALL.find(x=>x.id===RS.selId);
+  RS.pr=(d.buy-1000)/(ALL[ALL.length-1].buy-1000);
+  RS.speed=0.28;
+  const cls=['small','big','giant','mega'];
+  RS.rivals=[0,1,2].map(i=>({x:2+Math.random()*3,lane:i===0?0:i===1?2:3,color:RCOLS[i],name:RNAMES[i],cls:cls[Math.floor(Math.random()*4)],id:Math.floor(Math.random()*12),speed:0.279}));
+  const wm=document.getElementById('rwmsg');if(wm){wm.style.display='none';}
+  const st=document.getElementById('rstatus');if(st)st.textContent='→ Hızlan — ← Yavaşla — ↑↓ Şerit değiştir!';
+  drawTrack();
+  RS.iv=setInterval(()=>{
+    if(RS.done){stopRace();return;}
+    RS.px+=RS.speed;
+    RS.rivals.forEach(r=>{r.x+=r.speed;if(r.x>=FINISH&&!RS.done){RS.done=true;endRace(false,r.name);}});
+    if(RS.px>=FINISH&&!RS.done){RS.done=true;endRace(true,null);}
+    drawTrack();
+  },80);
+};
+
+function stopRace(){if(RS.iv){clearInterval(RS.iv);RS.iv=null;}}
+
+function mp(dx,dy){
+  if(!RS.started||RS.done){toast('Önce Başla!');return;}
+  if(dx>0)RS.speed=Math.min(RS.speed+0.0001, 0.5);
+  if(dx<0)RS.speed=Math.max(0.05,RS.speed-0.0001);
+  if(dy)RS.lane=Math.min(3,Math.max(0,RS.lane+dy));
+  drawTrack();
+}
+
+function drawTrack(){
+  const el=document.getElementById('rtrack');if(!el)return;
+  if(RS.selId===null){el.innerHTML='';return;}
+  const d=ALL.find(x=>x.id===RS.selId);
+  const H=320,lH=H/4;
+  const lTop=l=>Math.round(l*lH+lH/2-24);
+  let h='<div style="position:absolute;left:'+RS.px+'%;top:'+lTop(RS.lane)+'px;z-index:20;display:flex;flex-direction:column;align-items:center;transition:left .1s,top .1s">'
+    +'<div style="border:3px solid #7ab648;border-radius:9px;padding:2px;background:rgba(0,80,0,.35);box-shadow:0 0 10px #7ab64888">'+dSVG(d.id,d.cls,50,40)+'</div>'
+    +'<div style="background:#1a5c1a;border:2px solid #7ab648;color:#b8dc8a;font-size:.6rem;font-weight:800;padding:1px 6px;border-radius:6px;margin-top:2px;white-space:nowrap">🎮 LALİ</div></div>';
+  if(RS.started){
+    RS.rivals.forEach(r=>{
+      h+='<div style="position:absolute;left:'+r.x+'%;top:'+lTop(r.lane)+'px;z-index:15;display:flex;flex-direction:column;align-items:center;transition:left .08s">'
+        +dSVG(r.id,r.cls,42,34)
+        +'<div style="background:rgba(0,0,0,.85);border:1px solid '+r.color+';color:'+r.color+';font-size:.6rem;font-weight:800;padding:1px 5px;border-radius:6px;margin-top:2px;white-space:nowrap">'+r.name+'</div></div>';
+    });
+  }
+  el.innerHTML=h;
+}
+
+function endRace(won,rival){
+  stopRace();RS.done=true;
+  const wm=document.getElementById('rwmsg'),st=document.getElementById('rstatus');
+  if(won){
+    if(wm){wm.innerHTML='😄🏆 Lali kazandı! +1.000 $ 🏆😄';wm.style.display='block';wm.style.color='#f5c842';}
+    ST.money+=1000;updMoney();save();
+    if(st)st.textContent='Süpersin! +1.000 $ kazandın. Tekrar için Başla\'ya bas.';
+    toast('😄🏆 Lali kazandı! +1.000 $');
+  }else{
+    if(wm){wm.innerHTML='😢 '+rival+' kazandı!';wm.style.display='block';wm.style.color='#e74c3c';}
+    if(st)st.textContent='Olmadı! Tekrar için Başla\'ya bas.';
+    toast('😢 '+rival+' kazandı...');
+  }
+  drawTrack();
+}
+
+window.addEventListener('keydown',e=>{
+  if(!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key))return;
+  e.preventDefault();
+  if(!document.getElementById('screen-yaris').classList.contains('active'))return;
+  if(e.key==='ArrowRight')mp(1,0);if(e.key==='ArrowLeft')mp(-1,0);
+  if(e.key==='ArrowUp')mp(0,-1);if(e.key==='ArrowDown')mp(0,1);
+},true);
+
+window.startRace=startRace;
+window.raceSel=raceSel;
+window.mp=mp;
+window.forestSel=forestSel;
+window.go=go;
+window.buyDino=buyDino;
+window.sellDino=sellDino;
+window.buyF=buyF;
+window.buyB=buyB;
+
+updMoney();
+renderForest();
+if(ST.owned.length>0){setTimeout(()=>toast('💾 Kayıt yüklendi — '+ST.owned.length+' dinozor, '+fmt(ST.money)+' $'),600);}
+</script>
+</body>
+</html>

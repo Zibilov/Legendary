@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎪 Belediye Başkanı Seçimi</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --primary: #667eea; --primary-dark: #764ba2; --accent: #ff9a56; --success: #26de81; --danger: #fc5c65; --light: #f5f6fa; --radius: 12px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: white; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        .screen { display: none; }
+        .screen.active { display: block; }
+        h2 { text-align: center; font-size: 32px; margin-bottom: 30px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        
+        .wallet { background: linear-gradient(135deg, #ffd700, #ffed4e); color: #333; padding: 20px; border-radius: var(--radius); margin-bottom: 20px; text-align: center; font-weight: 700; font-size: 18px; }
+        .kupa { font-size: 28px; }
+        
+        .human-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+        .human-card { background: var(--light); border: 2px solid #ddd; border-radius: var(--radius); padding: 16px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .human-card:hover { border-color: var(--primary); transform: translateY(-4px); }
+        .human-card.selected { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; border-color: var(--primary-dark); }
+        .human-emoji { font-size: 35px; margin-bottom: 8px; }
+        .human-price { font-size: 12px; font-weight: 600; }
+        
+        button { padding: 10px 16px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 14px 28px; }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); }
+        .btn-primary:disabled { background: #ccc; cursor: not-allowed; opacity: 0.5; }
+        .btn-secondary { background: var(--light); color: #333; border: 2px solid #ddd; padding: 12px 24px; }
+        
+        .button-group { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+        
+        .name-input-section { background: var(--light); padding: 20px; border-radius: var(--radius); margin-bottom: 20px; text-align: center; }
+        .name-input-section input { padding: 10px; margin: 5px; border: 2px solid #ddd; border-radius: 6px; font-size: 14px; width: 200px; }
+        .name-input-section button { margin-top: 10px; }
+        
+        .human-info { background: var(--light); padding: 15px; border-radius: var(--radius); margin-bottom: 20px; text-align: center; font-weight: 600; }
+        
+        .outfit-display { background: var(--light); padding: 20px; border-radius: var(--radius); margin-bottom: 20px; text-align: center; }
+        .outfit-emoji { font-size: 60px; }
+        .outfit-name { font-weight: 600; color: var(--primary); margin-top: 10px; }
+        
+        .outfit-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+        .outfit-card { background: var(--light); border: 2px solid #ddd; border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .outfit-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+        .outfit-card.selected { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; border-color: var(--primary-dark); }
+        .outfit-emoji-small { font-size: 30px; margin-bottom: 4px; }
+        
+        .vote-card { background: var(--light); border: 2px solid #ddd; border-radius: var(--radius); padding: 16px; text-align: center; margin-bottom: 16px; }
+        .vote-card.winner { background: linear-gradient(135deg, var(--success), #1dd1a1); color: white; border-color: var(--success); }
+        .vote-card.loser { background: linear-gradient(135deg, var(--danger), #fc5c65); color: white; border-color: var(--danger); }
+        .vote-name { font-weight: 600; margin-bottom: 8px; }
+        .vote-count { font-size: 24px; font-weight: 700; }
+        
+        .result-message { font-size: 24px; font-weight: 700; padding: 20px; border-radius: var(--radius); margin-bottom: 20px; }
+        .result-message.win { background: var(--success); color: white; }
+        .result-message.lose { background: var(--danger); color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Screen 1: Arkadaş Seçimi -->
+        <div class="screen screen-1 active">
+            <h2>👫 Arkadaş Seç</h2>
+            
+            <div class="wallet">
+                <div>Senin Kupan:</div>
+                <div class="kupa" id="walletAmount">500,000</div>
+            </div>
+            
+            <p style="text-align: center; margin-bottom: 20px; font-size: 16px;">Hangi arkadaşını getirmek istiyorsun?</p>
+            
+            <div id="friendChoiceGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 30px;"></div>
+            
+            <div class="button-group">
+                <button class="btn-primary" id="continueBtn" disabled>Devam Et →</button>
+            </div>
+        </div>
+        
+        <!-- Screen 2: İnsan Satın Alma -->
+        <div class="screen screen-2">
+            <h2>👫 İnsan Satın Alma</h2>
+            
+            <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; font-weight: 600;">
+                🙋 Seçilen Arkadaş: <span id="selectedFriendDisplay"></span>
+            </div>
+            
+            <div class="wallet">
+                <div>Senin Kupan:</div>
+                <div class="kupa" id="walletAmount2">500,000</div>
+            </div>
+            
+            <p style="text-align: center; margin-bottom: 20px;">Birinci insanı seç ve isim ver! (💰 50.000 kupa)</p>
+            
+            <div class="human-grid" id="humanGrid"></div>
+            
+            <div class="name-input-section" id="nameInputSection" style="display: none;">
+                <h3>Birinci İnsan - İsim Ver</h3>
+                <input type="text" id="firstName" placeholder="İsim" maxlength="20">
+                <input type="text" id="lastName" placeholder="Soyad" maxlength="20">
+                <button class="btn-primary" onclick="selectFirstHuman()">Seç</button>
+            </div>
+            
+            <div id="friendSection" style="display: none; margin-top: 30px;">
+                <h3 style="text-align: center; margin-bottom: 20px;">Seçilen Arkadaş - İsim Ver</h3>
+                
+                <div class="name-input-section" id="friendNameInputSection">
+                    <h3>İkinci İnsan (Arkadaş)</h3>
+                    <input type="text" id="friendFirstName" placeholder="İsim" maxlength="20">
+                    <input type="text" id="friendLastName" placeholder="Soyad" maxlength="20">
+                    <button class="btn-primary" onclick="buyBothHumans()">Satın Al (💰 50.000)</button>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button class="btn-secondary" onclick="goBackToFriendSelection()">← Arkadaş Değiştir</button>
+                <button class="btn-primary" id="nextBtn2" onclick="goToOutfitScreen()" style="display: none;">Kıyafet Seç →</button>
+            </div>
+        </div>
+        
+        <!-- Screen 3: Kıyafet Seçimi -->
+        <div class="screen screen-3">
+            <h2>👔 Kıyafet Seç</h2>
+            <div class="human-info" id="humanDisplayInfo"></div>
+            <div class="wallet">
+                <div>Senin Kupan:</div>
+                <div class="kupa" id="walletAmount3">500,000</div>
+            </div>
+            <p style="text-align: center; margin-bottom: 20px;">Sahneye çıkacak kıyafetini seç</p>
+            <div class="outfit-grid" id="ownedOutfitsGrid"></div>
+            <div class="button-group">
+                <button class="btn-secondary" onclick="goBackToFriendSelection()">← Arkadaş Değiştir</button>
+                <button class="btn-secondary" onclick="goBackToHuman()">← Geri</button>
+                <button class="btn-primary" id="nextBtn3" disabled>Salona Git →</button>
+            </div>
+        </div>
+        
+        <!-- Screen 4: Salon -->
+        <div class="screen screen-4">
+            <h2>🎪 SALON - OY VERME</h2>
+            <div class="human-info" id="salonHumanInfo"></div>
+            <div class="outfit-display">
+                <div class="outfit-emoji" id="salonOutfit">👔</div>
+                <div class="outfit-name" id="salonOutfitName">Kıyafet</div>
+            </div>
+            
+            <div id="votesContainer"></div>
+            
+            <div id="resultContainer"></div>
+            
+            <div class="button-group">
+                <button class="btn-secondary" onclick="goBackToFriendSelection()">← Arkadaş Değiştir</button>
+                <button class="btn-primary" onclick="location.reload()">Tekrar Oyna</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const clothesPool = [
+            { id: 1, name: 'Siyah Elbise', emoji: '🖤', price: 100000 },
+            { id: 2, name: 'Çizgili Gömlek', emoji: '👕', price: 80000 },
+            { id: 3, name: 'Denim', emoji: '👖', price: 120000 },
+            { id: 4, name: 'Kırmızı Ceket', emoji: '🧥', price: 150000 },
+            { id: 5, name: 'Takım Elbise', emoji: '🎩', price: 200000 },
+            { id: 6, name: 'Spor Giyim', emoji: '⚽', price: 90000 },
+            { id: 7, name: 'Pembe Elbise', emoji: '💗', price: 110000 },
+            { id: 8, name: 'Mavi Blazer', emoji: '💙', price: 140000 },
+            { id: 9, name: 'Yeşil Ceket', emoji: '💚', price: 130000 },
+            { id: 10, name: 'Sarı Elbise', emoji: '💛', price: 95000 },
+            { id: 11, name: 'Mor Elbise', emoji: '💜', price: 125000 },
+            { id: 12, name: 'Siyah Smoking', emoji: '🎭', price: 250000 },
+        ];
+        
+        const humanPool = [
+            { emoji: '👩', price: 50000 },
+            { emoji: '👨', price: 50000 },
+            { emoji: '👱‍♀️', price: 50000 },
+            { emoji: '👨‍🦱', price: 50000 },
+            { emoji: '👩‍🦰', price: 50000 },
+            { emoji: '👨‍💼', price: 50000 },
+        ];
+        
+        let gameState = {
+            wallet: 500000,
+            ownedClothes: clothesPool.slice(0, 5),
+            selectedFriendChoice: null,
+            selectedHuman: null,
+            selectedFriend: null,
+            selectedOutfit: null,
+            humanFirstName: '',
+            humanLastName: '',
+            friendFirstName: '',
+            friendLastName: ''
+        };
+        
+        function showScreen(num) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelector(`.screen-${num}`).classList.add('active');
+        }
+        
+        function updateWallet() {
+            document.getElementById('walletAmount').textContent = gameState.wallet.toLocaleString('tr-TR');
+            document.getElementById('walletAmount2').textContent = gameState.wallet.toLocaleString('tr-TR');
+            document.getElementById('walletAmount3').textContent = gameState.wallet.toLocaleString('tr-TR');
+        }
+        
+        function renderFriendChoices() {
+            const grid = document.getElementById('friendChoiceGrid');
+            const friends = ['Ayşe 👩', 'Mehmet 👨', 'Zeynep 👱‍♀️', 'Ali 👨‍🦱', 'Gülşah 👩‍🦰', 'Emre 👨‍💼'];
+            
+            grid.innerHTML = friends.map((f, i) => `
+                <div class="human-card" onclick="selectFriendChoice(${i}, '${f}')">
+                    <div style="font-size: 40px; margin-bottom: 8px;">${f.split(' ')[1]}</div>
+                    <div class="human-price">${f.split(' ')[0]}</div>
+                </div>
+            `).join('');
+        }
+        
+        function selectFriendChoice(index, name) {
+            gameState.selectedFriendChoice = name;
+            document.querySelectorAll('#friendChoiceGrid .human-card').forEach((card, i) => {
+                card.classList.toggle('selected', i === index);
+            });
+            document.getElementById('continueBtn').disabled = false;
+        }
+        
+        function goToHumanShop() {
+            document.getElementById('selectedFriendDisplay').textContent = gameState.selectedFriendChoice;
+            renderHumans();
+            showScreen(2);
+        }
+        
+        function goBackToFriendSelection() {
+            renderFriendChoices();
+            showScreen(1);
+        }
+        
+        function renderHumans() {
+            const grid = document.getElementById('humanGrid');
+            grid.innerHTML = humanPool.map((h, i) => `
+                <div class="human-card" onclick="selectHuman(${i})">
+                    <div class="human-emoji">${h.emoji}</div>
+                    <div class="human-price">💰 50.000</div>
+                </div>
+            `).join('');
+        }
+        
+        function selectHuman(index) {
+            gameState.selectedHuman = humanPool[index];
+            document.querySelectorAll('#humanGrid .human-card').forEach((card, i) => {
+                card.classList.toggle('selected', i === index);
+            });
+            document.getElementById('nameInputSection').style.display = 'block';
+        }
+        
+        function selectFirstHuman() {
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            
+            if (!firstName || !lastName) {
+                alert('İsim ve soyad girmelisin!');
+                return;
+            }
+            
+            gameState.humanFirstName = firstName;
+            gameState.humanLastName = lastName;
+            document.getElementById('friendSection').style.display = 'block';
+            document.getElementById('nameInputSection').style.display = 'none';
+        }
+        
+        function buyBothHumans() {
+            const friendFirstName = document.getElementById('friendFirstName').value.trim();
+            const friendLastName = document.getElementById('friendLastName').value.trim();
+            
+            if (!friendFirstName || !friendLastName) {
+                alert('Arkadaş adı ve soyadı girmelisin!');
+                return;
+            }
+            
+            const selectedHumanEmoji = gameState.selectedFriendChoice.split(' ')[1];
+            gameState.selectedFriend = { emoji: selectedHumanEmoji, price: 50000 };
+            
+            const totalCost = 100000;
+            
+            if (gameState.wallet >= totalCost) {
+                gameState.wallet -= totalCost;
+                gameState.friendFirstName = friendFirstName;
+                gameState.friendLastName = friendLastName;
+                updateWallet();
+                document.getElementById('nextBtn2').style.display = 'inline-block';
+            } else {
+                alert('Yeterli kupan yok!');
+            }
+        }
+        
+        function goToOutfitScreen() {
+            document.getElementById('humanDisplayInfo').innerHTML = `
+                <div>👤 ${gameState.humanFirstName} ${gameState.humanLastName} + 👤 ${gameState.friendFirstName} ${gameState.friendLastName}</div>
+            `;
+            renderOwnedOutfits();
+            showScreen(3);
+        }
+        
+        function renderOwnedOutfits() {
+            const grid = document.getElementById('ownedOutfitsGrid');
+            grid.innerHTML = gameState.ownedClothes.map(c => `
+                <div class="outfit-card" onclick="selectOutfit(${c.id})">
+                    <div class="outfit-emoji-small">${c.emoji}</div>
+                    <div style="font-size: 11px; font-weight: 600;">${c.name}</div>
+                </div>
+            `).join('');
+        }
+        
+        function selectOutfit(id) {
+            gameState.selectedOutfit = gameState.ownedClothes.find(c => c.id === id);
+            
+            document.querySelectorAll('#ownedOutfitsGrid .outfit-card').forEach((card, i) => {
+                if (gameState.ownedClothes[i]) {
+                    card.classList.toggle('selected', gameState.ownedClothes[i].id === id);
+                }
+            });
+            document.getElementById('nextBtn3').disabled = false;
+            
+            document.getElementById('nextBtn3').onclick = () => {
+                startSalon();
+                showScreen(4);
+            };
+        }
+        
+        function startSalon() {
+            document.getElementById('salonHumanInfo').innerHTML = `
+                <div>${gameState.selectedHuman.emoji} ${gameState.humanFirstName} ${gameState.humanLastName} + ${gameState.selectedFriend.emoji} ${gameState.friendFirstName} ${gameState.friendLastName}</div>
+            `;
+            document.getElementById('salonOutfit').textContent = gameState.selectedOutfit.emoji;
+            document.getElementById('salonOutfitName').textContent = gameState.selectedOutfit.name;
+            
+            setTimeout(() => {
+                runVoting();
+            }, 1000);
+        }
+        
+        function getNameQuality(firstName, lastName) {
+            const fullName = (firstName + lastName).toLowerCase();
+            const badWords = ['kötü', 'çirkin', 'berbat', 'acı', 'ağlak', 'yok', 'hiç'];
+            const goodWords = ['güzel', 'harika', 'muhteşem', 'süper', 'akıllı', 'zeki'];
+            
+            let badScore = badWords.filter(w => fullName.includes(w)).length;
+            let goodScore = goodWords.filter(w => fullName.includes(w)).length;
+            
+            return goodScore - badScore;
+        }
+        
+        function runVoting() {
+            const nameQuality1 = getNameQuality(gameState.humanFirstName, gameState.humanLastName);
+            const nameQuality2 = getNameQuality(gameState.friendFirstName, gameState.friendLastName);
+            const combinedQuality = (nameQuality1 + nameQuality2) / 2;
+            
+            const baseWinChance = 0.5;
+            const youWin = Math.random() < (baseWinChance + (combinedQuality * 0.1));
+            
+            let yourVotes, theirVotes;
+            if (youWin) {
+                yourVotes = Math.floor(Math.random() * 100) + 500;
+                theirVotes = Math.floor(Math.random() * 100) + 300;
+            } else {
+                yourVotes = Math.floor(Math.random() * 100) + 300;
+                theirVotes = Math.floor(Math.random() * 100) + 500;
+            }
+            
+            const container = document.getElementById('votesContainer');
+            
+            container.innerHTML = `
+                <div class="vote-card ${youWin ? 'winner' : 'loser'}">
+                    <div class="vote-name">${gameState.humanFirstName} ${gameState.humanLastName} & ${gameState.friendFirstName} ${gameState.friendLastName}</div>
+                    <div class="vote-count">${yourVotes}</div>
+                </div>
+                <div class="vote-card ${!youWin ? 'winner' : 'loser'}">
+                    <div class="vote-name">Rakip Çifti</div>
+                    <div class="vote-count">${theirVotes}</div>
+                </div>
+            `;
+            
+            setTimeout(() => {
+                const result = document.getElementById('resultContainer');
+                if (youWin) {
+                    gameState.wallet += 3000;
+                    result.innerHTML = `
+                        <div class="result-message win">🎉 KAZANDI!</div>
+                        <div style="text-align: center; font-size: 20px; font-weight: 700; margin-bottom: 20px;">💰 3.000 Kupa Kazandın!</div>
+                    `;
+                } else {
+                    gameState.wallet -= 1;
+                    result.innerHTML = `
+                        <div class="result-message lose">😢 Kaybetti!</div>
+                        <div style="text-align: center; font-size: 18px; color: #666; margin-bottom: 20px;">Başka çift kazandı. -1 Kupa ceza!</div>
+                    `;
+                }
+                updateWallet();
+                saveGameState();
+            }, 800);
+        }
+        
+        function saveGameState() {
+            localStorage.setItem('salonGameState', JSON.stringify(gameState));
+        }
+        
+        function loadGameState() {
+            const saved = localStorage.getItem('salonGameState');
+            if (saved) {
+                gameState = JSON.parse(saved);
+                updateWallet();
+            }
+        }
+        
+        function goBackToHuman() {
+            showScreen(2);
+        }
+        
+        document.getElementById('continueBtn').onclick = goToHumanShop;
+        
+        renderFriendChoices();
+        loadGameState();
+    </script>
+</body>
+</html>

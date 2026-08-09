@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mutfak Oyunu</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #667eea;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+        }
+        h1 { text-align: center; margin-bottom: 20px; }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .stat-val { font-size: 1.5em; font-weight: bold; color: #667eea; }
+        .stat-lbl { font-size: 0.8em; color: #666; }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+
+        .left-panel {
+            background: #e3f2fd;
+            border: 3px solid #2196F3;
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 700px;
+            overflow-y: auto;
+        }
+
+        .left-panel h2 { margin-bottom: 15px; color: #1976D2; }
+
+        .order-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .order-btn:hover { background: #5568d3; }
+
+        .order-card {
+            background: white;
+            border-left: 5px solid #2196F3;
+            border-radius: 5px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .order-card:hover { background: #e8eaf6; }
+        .order-card.active { background: #bbdefb; font-weight: bold; }
+
+        .order-title { color: #1976D2; margin-bottom: 8px; font-weight: bold; }
+        .order-items { display: flex; gap: 5px; flex-wrap: wrap; }
+        .order-item { background: #fff; border: 1px solid #2196F3; padding: 3px 8px; border-radius: 3px; font-size: 0.85em; }
+
+        .right-panel {
+            background: #fffbf0;
+            border: 3px solid #ff9800;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .right-panel h2 { color: #ff9800; margin-bottom: 15px; }
+
+        .section {
+            background: white;
+            border: 2px solid #ff9800;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .section-title { font-weight: bold; margin-bottom: 10px; color: #333; }
+
+        .ingredients-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .ing-btn {
+            background: #e8f5e9;
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            cursor: grab;
+            font-weight: bold;
+            font-size: 1.2em;
+            user-select: none;
+            transition: 0.2s;
+        }
+
+        .ing-btn:hover { background: #c8e6c9; transform: scale(1.05); }
+        .ing-btn:active { cursor: grabbing; opacity: 0.5; }
+
+        .stations-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .station {
+            background: white;
+            border: 3px dashed #ff9800;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: 0.3s;
+        }
+
+        .station:hover { background: #fff8f0; }
+        .station.drag-over {
+            background: #fff3e0;
+            border-color: #ff6f00;
+            box-shadow: 0 0 15px rgba(255, 107, 0, 0.3);
+        }
+
+        .station-emoji { font-size: 2.5em; margin-bottom: 8px; }
+        .station-label { font-weight: bold; font-size: 0.9em; }
+
+        .progress {
+            background: #fff9c4;
+            border: 3px solid #fbc02d;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .progress-title { font-weight: bold; margin-bottom: 10px; }
+        .progress-items {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            min-height: 40px;
+            align-items: center;
+        }
+
+        .prog-item {
+            background: #fff3e0;
+            border: 2px solid #ff9800;
+            border-radius: 5px;
+            padding: 6px 12px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .serve-btn {
+            width: 100%;
+            padding: 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1em;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .serve-btn:hover:not(:disabled) { background: #45a049; }
+        .serve-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+        .trash { grid-column: 1 / -1; }
+
+        @media (max-width: 1024px) {
+            .layout { grid-template-columns: 1fr; }
+            .ingredients-row { grid-template-columns: repeat(3, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" ondragover="event.preventDefault()" ondrop="event.preventDefault()">
+        <h1>🍳 MUTFAK OYUNU 🍳</h1>
+
+        <div class="stats">
+            <div>
+                <div class="stat-lbl">💰 Para</div>
+                <div class="stat-val" id="money">0</div>
+            </div>
+            <div>
+                <div class="stat-lbl">✅ Tamamlanan</div>
+                <div class="stat-val" id="done">0</div>
+            </div>
+            <div>
+                <div class="stat-lbl">⏳ Bekleyen</div>
+                <div class="stat-val" id="waiting">0</div>
+            </div>
+        </div>
+
+        <!-- YAPILAN YEMEKLER -->
+        <div style="position: fixed; top: 20px; right: 20px; background: #e8f5e9; border: 3px solid #4CAF50; border-radius: 10px; padding: 15px; max-width: 250px; max-height: 350px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+            <div style="font-weight: bold; margin-bottom: 10px; color: #2e7d32; font-size: 0.95em;">🍽️ YAPILAN YEMEKLER</div>
+            <div id="completedDishes" style="font-size: 0.85em;">
+                <div style="color: #999;">Henüz yemek yok...</div>
+            </div>
+        </div>
+
+        <div class="layout">
+            <!-- SOL: SİPARİŞLER -->
+            <div class="left-panel">
+                <h2>📋 SİPARİŞLER</h2>
+                <div id="ordersList"></div>
+                <button class="order-btn" onclick="window.addNewOrder()">➕ YENİ EKLE</button>
+            </div>
+
+            <!-- SAĞ: MUTFAK -->
+            <div class="right-panel">
+                <h2>👨‍🍳 MUTFAK</h2>
+
+                <!-- MALZEMELERİ SEÇ -->
+                <div class="section">
+                    <div class="section-title">🥕 MALZEME SEÇ</div>
+                    <div class="ingredients-row">
+                        <div class="ing-btn" draggable="true" ondragstart="window.dragStart(event, 'domates')">🍅</div>
+                        <div class="ing-btn" draggable="true" ondragstart="window.dragStart(event, 'salata')">🥬</div>
+                        <div class="ing-btn" draggable="true" ondragstart="window.dragStart(event, 'soğan')">🧅</div>
+                        <div class="ing-btn" draggable="true" ondragstart="window.dragStart(event, 'et')">🥩</div>
+                        <div class="ing-btn" draggable="true" ondragstart="window.dragStart(event, 'peynir')">🧀</div>
+                        <div class="ing-btn" draggable="true" ondragstart="window.dragStart(event, 'ekmek')">🍞</div>
+                        <div class="ing-btn" draggable="true" ondragstart="window.dragStart(event, 'tavuk')">🍗</div>
+                        <div class="ing-btn" draggable="true" ondragstart="window.dragStart(event, 'pilav')">🍚</div>
+                        <div class="ing-btn" draggable="true" ondragstart="window.dragStart(event, 'patates')">🥔</div>
+                        <div class="ing-btn" draggable="true" ondragstart="window.dragStart(event, 'muz')">🍌</div>
+                        <div class="ing-btn" draggable="true" ondragstart="window.dragStart(event, 'elma')">🍎</div>
+                        <div class="ing-btn" draggable="true" ondragstart="window.dragStart(event, 'balık')">🐟</div>
+                        <div class="ing-btn" draggable="true" ondragstart="window.dragStart(event, 'süt')">🥛</div>
+                        <div class="ing-btn" draggable="true" ondragstart="window.dragStart(event, 'yoğurt')">🥣</div>
+                        <div class="ing-btn" draggable="true" ondragstart="window.dragStart(event, 'jambon')">🍗</div>
+                        <div class="ing-btn" draggable="true" ondragstart="window.dragStart(event, 'mantı')">🥟</div>
+                    </div>
+                </div>
+
+                <!-- İŞ İSTASYONLARI -->
+                <div class="section">
+                    <div class="section-title">🔧 İŞ İSTASYONLARI</div>
+                    <div class="stations-grid">
+                        <div class="station" ondrop="window.drop(event, 'cut')" ondragover="window.dragOver(event)" ondragleave="window.dragLeave(event)" ondragend="window.dragEnd(event)">
+                            <div class="station-emoji">✂️</div>
+                            <div class="station-label">KES</div>
+                        </div>
+
+                        <div class="station" ondrop="window.drop(event, 'wash')" ondragover="window.dragOver(event)" ondragleave="window.dragLeave(event)" ondragend="window.dragEnd(event)">
+                            <div class="station-emoji">💧</div>
+                            <div class="station-label">YIKA</div>
+                        </div>
+
+                        <div class="station" ondrop="window.drop(event, 'chop')" ondragover="window.dragOver(event)" ondragleave="window.dragLeave(event)" ondragend="window.dragEnd(event)">
+                            <div class="station-emoji">🔪</div>
+                            <div class="station-label">DOĞRA</div>
+                        </div>
+
+                        <div class="station" ondrop="window.drop(event, 'cook')" ondragover="window.dragOver(event)" ondragleave="window.dragLeave(event)" ondragend="window.dragEnd(event)">
+                            <div class="station-emoji">🍳</div>
+                            <div class="station-label">PİŞİR</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- İLERLEME -->
+                <div class="progress">
+                    <div class="progress-title">✨ HAZIR MALZEMELER</div>
+                    <div class="progress-items" id="progress">
+                        <span style="color: #999;">Başlamadı...</span>
+                    </div>
+                </div>
+
+                <button class="serve-btn" id="serveBtn" onclick="window.serve()" disabled>🍽️ SERVIS YAP</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ING = {
+            domates: { name: 'Domates', need: ['wash', 'chop'] },
+            salata: { name: 'Salata', need: ['wash', 'chop'] },
+            soğan: { name: 'Soğan', need: ['chop'] },
+            et: { name: 'Et', need: ['wash', 'chop', 'cook'] },
+            peynir: { name: 'Peynir', need: ['cut'] },
+            ekmek: { name: 'Ekmek', need: [] },
+            tavuk: { name: 'Tavuk', need: ['wash', 'chop', 'cook'] },
+            pilav: { name: 'Pilav', need: ['wash', 'cook'] },
+            patates: { name: 'Patates', need: ['wash', 'chop', 'cook'] },
+            muz: { name: 'Muz', need: ['chop'] },
+            elma: { name: 'Elma', need: ['wash', 'chop'] },
+            balık: { name: 'Balık', need: ['wash', 'chop', 'cook'] },
+            süt: { name: 'Süt', need: [] },
+            yoğurt: { name: 'Yoğurt', need: [] },
+            jambon: { name: 'Jambon', need: ['cut'] },
+            mantı: { name: 'Mantı', need: ['cook'] }
+        };
+
+        const RECIPES = [
+            { name: 'Salad 🥗', items: ['salata', 'domates', 'soğan'], money: 20000 },
+            { name: 'Burger 🍔', items: ['ekmek', 'et', 'salata', 'domates'], money: 35000 },
+            { name: 'Peynir Tostu 🧀', items: ['ekmek', 'peynir'], money: 15000 },
+            { name: 'Tavuk Pilav 🍚', items: ['tavuk', 'pilav'], money: 40000 }
+        ];
+
+        let G = {
+            money: 1000000,
+            done: 0,
+            orders: [],
+            cur: null,
+            prog: {},
+            id: 0,
+            drag: null,
+            completedDishes: {}
+        };
+
+        // localStorage'dan yükle
+        function loadGame() {
+            const saved = localStorage.getItem('mutfakGame');
+            if (saved) {
+                const data = JSON.parse(saved);
+                G.money = data.money || 1000000;
+                G.done = data.done || 0;
+                G.completedDishes = data.completedDishes || {};
+                G.id = data.id || 0;
+            }
+        }
+
+        // localStorage'a kaydet
+        function saveGame() {
+            const toSave = {
+                money: G.money,
+                done: G.done,
+                completedDishes: G.completedDishes,
+                id: G.id
+            };
+            localStorage.setItem('mutfakGame', JSON.stringify(toSave));
+        }
+
+        window.dragStart = (e, ing) => {
+            if (!G.cur) {
+                alert('Sipariş seç!');
+                return;
+            }
+            if (!G.cur.items.includes(ing)) {
+                alert('Bu malzeme bu sipariş için gerekli değil!');
+                return;
+            }
+            G.drag = ing;
+            e.dataTransfer.effectAllowed = 'copy';
+            e.dataTransfer.setData('text/plain', ing);
+        };
+
+        window.dragOver = (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            e.currentTarget.classList.add('drag-over');
+        };
+
+        window.dragLeave = (e) => {
+            if (e.currentTarget === e.target) {
+                e.currentTarget.classList.remove('drag-over');
+            }
+        };
+
+        window.dragEnd = (e) => {
+            document.querySelectorAll('.station').forEach(s => s.classList.remove('drag-over'));
+        };
+
+        window.drop = (e, station) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.currentTarget.classList.remove('drag-over');
+
+            if (!G.drag || !G.cur) return;
+
+            const ing = ING[G.drag];
+            if (!ing.need.includes(station)) {
+                alert('❌ Bu işlem bu malzemeye uymuyor!');
+                G.drag = null;
+                return;
+            }
+
+            if (!G.prog[G.drag]) G.prog[G.drag] = [];
+            if (!G.prog[G.drag].includes(station)) {
+                G.prog[G.drag].push(station);
+                console.log('Malzeme eklendi:', G.drag, 'İstasyon:', station);
+            }
+
+            G.drag = null;
+            render();
+        };
+
+        window.addNewOrder = () => {
+            const r = RECIPES[Math.floor(Math.random() * RECIPES.length)];
+            const o = {
+                id: ++G.id,
+                name: r.name,
+                items: [...r.items],
+                money: r.money
+            };
+            G.orders.push(o);
+            if (!G.cur) G.cur = o;
+            render();
+        };
+
+        window.selectOrder = (id) => {
+            G.cur = G.orders.find(o => o.id === id);
+            G.prog = {};
+            render();
+        };
+
+        window.serve = () => {
+            if (!G.cur) return;
+            const ok = G.cur.items.every(i => {
+                const need = ING[i].need;
+                const p = G.prog[i] || [];
+                return need.length === 0 || need.every(n => p.includes(n));
+            });
+            if (!ok) {
+                alert('Yemek hazır değil!');
+                return;
+            }
+            
+            // Yapılan yemeği say
+            const dishName = G.cur.name;
+            if (!G.completedDishes[dishName]) {
+                G.completedDishes[dishName] = 0;
+            }
+            G.completedDishes[dishName]++;
+            
+            G.money += G.cur.money;
+            G.done++;
+            G.orders.splice(G.orders.indexOf(G.cur), 1);
+            G.cur = null;
+            G.prog = {};
+            render();
+        };
+
+        let render = () => {
+            document.getElementById('money').textContent = G.money.toLocaleString('tr-TR');
+            document.getElementById('done').textContent = G.done;
+            document.getElementById('waiting').textContent = G.orders.length;
+
+            const orders = G.orders.map(o => `
+                <div class="order-card ${G.cur && G.cur.id === o.id ? 'active' : ''}" onclick="window.selectOrder(${o.id})">
+                    <div class="order-title">${o.name}</div>
+                    <div class="order-items">
+                        ${o.items.map(i => `<div class="order-item">${ING[i].name}</div>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('ordersList').innerHTML = orders;
+
+            // İstasyonlardaki malzemeleri göster
+            const stations = document.querySelectorAll('.station');
+            const stationNames = ['cut', 'wash', 'chop', 'cook'];
+            
+            stations.forEach((station, idx) => {
+                const stationName = stationNames[idx];
+                const itemsInStation = Object.keys(G.prog).filter(ing => 
+                    G.prog[ing].includes(stationName)
+                ).map(ing => ING[ing].name).join(', ');
+                
+                const labelDiv = station.querySelector('.station-label');
+                const originalLabel = ['KES', 'YIKA', 'DOĞRA', 'PİŞİR'][idx];
+                
+                if (itemsInStation) {
+                    labelDiv.innerHTML = originalLabel + '<br><span style="font-size: 0.8em; color: #ff6f00; font-weight: bold;">' + itemsInStation + '</span>';
+                } else {
+                    labelDiv.innerHTML = originalLabel;
+                }
+            });
+
+            let progress = '<span style="color: #999;">Sipariş seç...</span>';
+            if (G.cur) {
+                progress = G.cur.items.map(i => {
+                    const need = ING[i].need;
+                    const p = G.prog[i] || [];
+                    const status = need.length === 0 ? '✓' : `${p.length}/${need.length}`;
+                    
+                    // Hangi işlemlerin yapıldığını göster
+                    let done = '';
+                    if (p.length > 0) {
+                        const ops = [];
+                        if (p.includes('cut')) ops.push('✂️');
+                        if (p.includes('wash')) ops.push('💧');
+                        if (p.includes('chop')) ops.push('🔪');
+                        if (p.includes('cook')) ops.push('🍳');
+                        done = ops.join('');
+                    }
+                    
+                    return `<div class="prog-item">${ING[i].name} ${done} ${status}</div>`;
+                }).join('');
+            }
+            document.getElementById('progress').innerHTML = progress;
+
+            const canServe = G.cur && G.cur.items.every(i => {
+                const need = ING[i].need;
+                const p = G.prog[i] || [];
+                return need.length === 0 || need.every(n => p.includes(n));
+            });
+            document.getElementById('serveBtn').disabled = !canServe;
+
+            // Yapılan yemekleri göster
+            const dishesArray = Object.entries(G.completedDishes).map(([name, count]) => 
+                `<div style="padding: 5px; margin-bottom: 5px; background: white; border-radius: 4px; border-left: 3px solid #4CAF50;">
+                    <strong>${count}x</strong> ${name}
+                </div>`
+            ).join('');
+            
+            document.getElementById('completedDishes').innerHTML = dishesArray || '<div style="color: #999;">Henüz yemek yok...</div>';
+        };
+
+        // Her render'de kaydet
+        const originalRender = render;
+        render = function() {
+            originalRender();
+            saveGame();
+        };
+
+        addNewOrder();
+        loadGame();
+        render();
+    </script>
+</body>
+</html>
